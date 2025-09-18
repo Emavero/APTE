@@ -1,0 +1,27 @@
+# Toolkit pour construire notre API REST (serializers, views, permissions…)
+djangorestframework   
+
+# Driver PostgreSQL → permet à Django de communiquer avec notre base PostgreSQL
+psycopg2-binary      
+
+# Authentification JWT (JSON Web Token) → utile pour protéger nos endpoints API
+djangorestframework-simplejwt    
+
+# Génération automatique de la documentation OpenAPI/Swagger pour DRF
+drf-spectacular    
+
+# Librairie pour gérer les images (upload de photos de biens immobiliers, redimensionnement…)
+pillow    
+
+# Middleware CORS → permet au frontend (React/Next.js, mobile) d’appeler notre API sans blocage navigateur
+django-cors-headers    
+
+# Pour effectuer des appels HTTP vers des APIs externes (ex: API Wave, PayTech…)
+requests    
+
+# Gestion des variables d’environnement (ex: clés API, secrets) via fichier .env
+python-decouple    
+
+
+# Pour les filtres
+django-filter
