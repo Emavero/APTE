@@ -1,27 +1,45 @@
 from rest_framework import serializers
-from .models import Quote
-from apps.users.models import User
+from .models import Quote, QuoteItem
+from apps.products.serializers import ProductSerializer
 
 
-# Utilisateur normal → devis
+class QuoteItemSerializer(serializers.ModelSerializer):
+    product = ProductSerializer(read_only=True)
+    product_id = serializers.PrimaryKeyRelatedField(
+        queryset=QuoteItem._meta.get_field("product").related_model.objects.all(),
+        source="product",
+        write_only=True
+    )
+
+    class Meta:
+        model = QuoteItem
+        fields = ["id", "product", "product_id", "quantity"]
+
+
 class QuoteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Quote
-        fields = ["id", "description", "estimated_price", "status", "created_at"]
-
-
-# Admin → devis avec détails utilisateur
-class AdminQuoteSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
+    items = QuoteItemSerializer(many=True)
 
     class Meta:
         model = Quote
-        fields = ["id", "user", "description", "estimated_price", "status", "created_at"]
+        fields = ["id", "user", "status", "description", "total_estimate", "message", "created_at", "items"]
+        read_only_fields = ["user", "total_estimate", "created_at"]
 
-    def get_user(self, obj):
-        return {
-            "id": obj.user.id,
-            "email": obj.user.email,
-            "phone": obj.user.phone,
-            "full_name": obj.user.full_name,
-        }
+    def create(self, validated_data):
+        items_data = validated_data.pop("items")
+        quote = Quote.objects.create(**validated_data, user=self.context["request"].user)
+
+        total_estimate = 0
+        for item_data in items_data:
+            product = item_data["product"]
+            quantity = item_data["quantity"]
+
+            QuoteItem.objects.create(
+                quote=quote,
+                product=product,
+                quantity=quantity
+            )
+            total_estimate += product.price * quantity  # si tu as price dans Product
+
+        quote.total_estimate = total_estimate
+        quote.save()
+        return quote

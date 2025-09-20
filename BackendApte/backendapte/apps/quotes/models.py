@@ -18,6 +18,8 @@ class Quote(models.Model):
 
     user = models.ForeignKey(User, related_name="quotes", on_delete=models.CASCADE)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="pending")
+    description = models.TextField(default="")
+
     total_estimate = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     message = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)

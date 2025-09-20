@@ -1,21 +1,18 @@
 from django.contrib import admin
 from .models import Order, OrderItem
+from apps.products.models import Product
 
 
-# Inline pour afficher les produits dans une commande
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
-    extra = 0
-    readonly_fields = ("product", "quantity", "price")
-    can_delete = False
+    extra = 1  # permet d’ajouter au moins une ligne
+    autocomplete_fields = ["product"]  # permet de rechercher dans les produits existants
 
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "status", "total_price", "created_at", "updated_at")
+    inlines = [OrderItemInline]
     list_filter = ("status", "created_at")
     search_fields = ("user__email", "user__phone")
-    ordering = ("-created_at",)
-    inlines = [OrderItemInline]  # Affiche les produits liés dans la page de détail
-
     readonly_fields = ("total_price", "created_at", "updated_at")
