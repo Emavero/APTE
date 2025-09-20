@@ -5,6 +5,7 @@ class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["id", "name", "slug"]
+        __name__ = "Category"
 
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
@@ -19,3 +20,4 @@ class ProductSerializer(serializers.ModelSerializer):
             "image", "is_active", "category", "category_id",
             "created_at", "updated_at"
         ]
+        __name__ = "Product"

@@ -39,8 +39,8 @@ class MeUpdateView(generics.UpdateAPIView):
 class DeleteMeView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user
+    #def get_object(self):
+     #   return self.request.user
 
 
 
