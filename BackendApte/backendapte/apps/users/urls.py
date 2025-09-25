@@ -6,9 +6,9 @@ urlpatterns = [
     path("register/", RegisterView.as_view(), name="register"),
     path("login/", TokenObtainPairView.as_view(), name="login"),
     path("token/refresh/", TokenRefreshView.as_view(), name="token_refresh"),
-    #path("me/", MeView.as_view(), name="me"),
-    path("update/", MeUpdateView.as_view(), name="user-me-update"),
-    path("delete/", DeleteMeView.as_view(), name="user-me-delete"),
+    path("me/", MeView.as_view(), name="me"),
+    path("/update/", MeUpdateView.as_view(), name="user-me-update"),
+    path("/delete/", DeleteMeView.as_view(), name="user-me-delete"),
     #path("", UserList.as_view(), name="user-list"),
 
 ]
