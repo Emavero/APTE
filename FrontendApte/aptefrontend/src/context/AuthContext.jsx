@@ -1,58 +1,37 @@
-import { createContext, useState, useEffect } from "react";
-import apiClient from "../services/apiClient";
+import { createContext, useContext, useState } from "react";
+import authService from "../services/authService";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("token") || null);
 
-  // Charger l'utilisateur connecté si token existant
-  useEffect(() => {
-    if (token) {
-      apiClient
-        .get("/users/me/")  // endpoint pour récupérer l'utilisateur
-        .then((res) => setUser(res.data))
-        .catch(() => logout());
-    }
-  }, [token]);
-
-  // Connexion
-  const login = async (email, password) => {
-    try {
-      const res = await apiClient.post("/users/login/", { email, password });
-      localStorage.setItem("token", res.data.access);
-      localStorage.setItem("refresh_token", res.data.refresh);
-      setToken(res.data.access);
-
-      // récupérer l'utilisateur connecté
-      const userRes = await apiClient.get("/users/me/");
-      setUser(userRes.data);
-    } catch (err) {
-      throw err;
-    }
+  const register = async (formData) => {
+    const response = await authService.register(formData);
+    return response;
   };
 
-  // Déconnexion
-  const logout = () => {
+  const login = async (formData) => {
+    const response = await authService.login(formData);
+    // Sauvegarde le token JWT
+    localStorage.setItem("token", response.data.access);
+    localStorage.setItem("refresh", response.data.refresh);
+    setUser(response.data.user);
+    return response.data.user;
+  };
+
+  const logout = async () => {
+    await authService.logout();
     localStorage.removeItem("token");
-    localStorage.removeItem("refresh_token");
-    setToken(null);
+    localStorage.removeItem("refresh");
     setUser(null);
   };
 
-  // Inscription
-  const register = async (data) => {
-    try {
-      await apiClient.post("/users/register/", data);
-    } catch (err) {
-      throw err;
-    }
-  };
-
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, register }}>
+    <AuthContext.Provider value={{ user, register, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
+export const useAuth = () => useContext(AuthContext);
