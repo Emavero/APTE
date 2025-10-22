@@ -1,20 +1,25 @@
 import React, { useState, useEffect, useContext } from 'react';
 import Navbar from '../components/layout/Navbar/Navbar';
-import Hero from './Hero';
+import Products from './Products';
 import Footer from '../components/layout/Footer';
+import ProductDetails from './ProductDetails';
 import AOS from 'aos';
 import 'aos/dist/aos.css';
-import Features from './Features';
-import Solutions from './Solutions';
 import Order from './Order';
 import { CartContext } from '../context/CartContext';
 
-export default function Home() {
+export default function ProductsPage() {
   const [orderPopup, setOrderPopup] = useState(false);
-  const { cartItems } = useContext(CartContext);
+  const [selectedProduct, setSelectedProduct] = useState(null);
+  const { cartItems, addToCart } = useContext(CartContext);
 
   const handleOrderPopup = () => {
     setOrderPopup(!orderPopup);
+  };
+
+  const handleAddToCart = (product, quantity = 1) => {
+    addToCart(product, quantity);
+    setOrderPopup(true);
   };
 
   useEffect(() => {
@@ -30,18 +35,30 @@ export default function Home() {
   return (
     <div className="bg-white dark:bg-gray-900 dark:text-white duration-200">
       <Navbar 
-        handleOrderPopup={handleOrderPopup}
+        handleOrderPopup={handleOrderPopup} 
         cartItems={cartItems}
       />
-      <Hero handleOrderPopup={handleOrderPopup} />
-      <Features />
-      <Solutions />
       
+      <Products 
+        handleOrderPopup={handleOrderPopup}
+        onProductClick={setSelectedProduct}
+        onAddToCart={handleAddToCart}
+      />
+
+      {selectedProduct && (
+        <ProductDetails
+          product={selectedProduct}
+          onClose={() => setSelectedProduct(null)}
+          handleOrderPopup={handleOrderPopup}
+          onAddToCart={handleAddToCart}
+        />
+      )}
+
       <Order 
         isOpen={orderPopup} 
         onClose={handleOrderPopup}
       />
-      
+
       <Footer />
     </div>
   );
