@@ -13,13 +13,14 @@ import { useNavigate } from "react-router-dom";
 const Menu = [
   { id: 1, name: "Accueil", link: "/" },
   { id: 2, name: "Produits", link: "/products" },
+  { id: 3, name: "Assistances", link: "/#" },
   { id: 4, name: "Devis", link: "/#" },
 ];
 
 const DropdownLinks = [
-  { id: 1, name: "Appartements", link: "/apartments" },
-  { id: 2, name: "Maisons et Villas", link: "/houses" },
-  { id: 3, name: "Entreprises", link: "/offices" },
+  { id: 1, name: "Appartements", link: "/#" },
+  { id: 2, name: "Maisons et Villas", link: "/#" },
+  { id: 3, name: "Entreprises", link: "/#" },
 ];
 
 const Navbar = ({ handleOrderPopup, cartItems = [] }) => {
@@ -76,7 +77,7 @@ const Navbar = ({ handleOrderPopup, cartItems = [] }) => {
               <div className="relative">
                 <FaCartShopping className="text-xl" />
                 {cartCount > 0 && (
-                  <span className="absolute -top-2 -right-2 bg-red-800 text-white text-xs font-bold 
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold 
                                  rounded-full w-5 h-5 flex items-center justify-center animate-pulse">
                     {cartCount > 99 ? '99+' : cartCount}
                   </span>
