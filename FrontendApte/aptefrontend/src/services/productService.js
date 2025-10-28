@@ -31,19 +31,13 @@ const productService = {
     }),
 
   createProduct: (data) =>
-    apiClient.post("products/", data, {
-      headers: { "Content-Type": "application/json" },
-    }),
+    apiClient.post("products/", data), // pas de Content-Type
 
   updateProduct: (productId, data) =>
-    apiClient.put(`products/${productId}/`, data, {
-      headers: { "Content-Type": "application/json" },
-    }),
+    apiClient.patch(`products/${productId}/`, data), // pas de Content-Type
 
   deleteProduct: (productId) =>
-    apiClient.delete(`products/${productId}/`, {
-      headers: { "Content-Type": "application/json" },
-    }),
+    apiClient.delete(`products/${productId}/`)
 };
 
 export default productService;
