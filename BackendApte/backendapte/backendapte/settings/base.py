@@ -135,3 +135,32 @@ CORS_ALLOWED_ORIGINS = [
 ]
 # Pour autoriser l'envoi des cookies (si JWT via cookie)
 # CORS_ALLOW_CREDENTIALS = True
+
+# Wave Payment Configuration
+WAVE_API_KEY = os.getenv('WAVE_API_KEY', '')
+WAVE_SECRET_KEY = os.getenv('WAVE_SECRET_KEY', '')
+WAVE_API_URL = 'https://api.wave.com/v1'  # URL de l'API Wave
+
+# URLs pour callbacks
+BACKEND_URL = os.getenv('BACKEND_URL', 'http://localhost:8000')
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'http://localhost:3000')
+
+# Logging
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'orders.log',
+        },
+    },
+    'loggers': {
+        'apps.orders': {
+            'handlers': ['file'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}

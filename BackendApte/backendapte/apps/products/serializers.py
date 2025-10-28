@@ -12,6 +12,7 @@ class ProductSerializer(serializers.ModelSerializer):
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), source="category", write_only=True
     )
+   
     image_url = serializers.SerializerMethodField()
 
     class Meta:

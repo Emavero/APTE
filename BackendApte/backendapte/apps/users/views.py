@@ -1,25 +1,29 @@
-from rest_framework import generics, permissions ,filters
+from rest_framework import generics, permissions, filters, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.pagination import PageNumberPagination
 from django_filters.rest_framework import DjangoFilterBackend
-from .serializers import UserSerializer, RegisterSerializer ,UserUpdateSerializer
+from .serializers import UserSerializer, RegisterSerializer, UserUpdateSerializer
 from .models import User
-
 
 # Pagination
 class UserPagination(PageNumberPagination):
-    page_size = 10           # nombre d'éléments par page
-    page_size_query_param = 'page_size'  # permettre de modifier via query param
+    page_size = 10
+    page_size_query_param = 'page_size'
     max_page_size = 100
 
 
-# Inscription utilisateur
+# ==========================
+# Inscription
+# ==========================
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
 
-# Profil utilisateur
+
+# ==========================
+# Profil utilisateur connecté
+# ==========================
 class MeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -28,6 +32,9 @@ class MeView(APIView):
         return Response(serializer.data)
 
 
+# ==========================
+# Mise à jour profil / mot de passe (connecté)
+# ==========================
 class MeUpdateView(generics.UpdateAPIView):
     serializer_class = UserUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -36,40 +43,56 @@ class MeUpdateView(generics.UpdateAPIView):
         return self.request.user
 
 
-class DeleteMeView(generics.DestroyAPIView):
-    permission_classes = [permissions.IsAuthenticated]
+# ==========================
+# Réinitialisation mot de passe (oubli)
+# ==========================
+class ResetPasswordView(APIView):
+    permission_classes = [permissions.AllowAny]
 
-    #def get_object(self):
-     #   return self.request.user
+    def post(self, request):
+        email = request.data.get("email")
+        new_password = request.data.get("new_password")
+
+        if not email or not new_password:
+            return Response(
+                {"detail": "Email et nouveau mot de passe requis."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            user = User.objects.get(email=email)
+            user.set_password(new_password)
+            user.save()
+            return Response({"detail": "Mot de passe réinitialisé avec succès."})
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "Aucun utilisateur trouvé avec cet email."},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
-
+# ==========================
+# Liste des utilisateurs (admin)
+# ==========================
 class UserList(generics.ListAPIView):
-   
-    """
-    Classe pour lister les utilisateurs.
-
-    Fonctionnalités :
-      - recherche globale par email, phone, full_name, role
-      - filtrage précis par email et rôle
-      - tri par champs (ordering)
-      - pagination
-    Accessible uniquement aux admins.
-    """
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
     pagination_class = UserPagination
 
-    # Backends pour recherche, filtrage et tri
     filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
-
-    # Recherche globale
     search_fields = ['email', 'phone', 'full_name', 'role']
-
-    # Filtrage précis via query params
     filterset_fields = ['email', 'role', 'is_active', 'is_staff']
-
-    # Champs disponibles pour trier
     ordering_fields = ['email', 'full_name', 'role', 'date_joined']
-    ordering = ['email']  # tri par défaut
+    ordering = ['email']
+
+
+# ==========================
+# Suppression compte utilisateur (connecté)
+# ==========================
+
+class DeleteMeView(generics.DestroyAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
