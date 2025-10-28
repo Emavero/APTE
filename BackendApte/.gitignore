@@ -1,8 +1,0 @@
-# Ignorer les fichiers d'environnement
-*.env
-
-# Ignorer uniquement le contenu du dossier media/products/
-BackendApte/backendapte/backendapte/media/products/*
-
-# MAIS garder le dossier vide (pour éviter les erreurs dans Django)
-!BackendApte/backendapte/backendapte/media/products/.gitkeep
