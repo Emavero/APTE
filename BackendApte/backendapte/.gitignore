@@ -1,25 +1,6 @@
-# --- Environnements Python ---
-venv/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.log
-
-# --- Base de données locale ---
-db.sqlite3
-
 # --- Fichiers d'environnement ---
 *.env
 
 # --- Fichiers et dossiers générés ---
-media/products/*
-!media/products/.gitkeep
-
-# --- Fichiers statiques compilés (si utilisés) ---
-staticfiles/
-static/
-
-# --- Fichiers VSCode ou IDE ---
-.vscode/
-.idea/
+backendapte/media/products/*
+!backendapte/media/products/.gitkeep
