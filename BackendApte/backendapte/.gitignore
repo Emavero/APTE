@@ -5,4 +5,4 @@
 backendapte/media/products/*
 !backendapte/media/products/.gitkeep
 
-order.log
+*order.log
