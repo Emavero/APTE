@@ -228,7 +228,7 @@ const ProductDetails = ({ product, onClose, handleOrderPopup, onAddToCart }) => 
                     </div>
                     <div>
                       <p className="text-xs text-gray-600 dark:text-gray-400">Livraison</p>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Gratuite</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Rapide</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

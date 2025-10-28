@@ -75,8 +75,11 @@ const Footer = () => {
             </div>
           </div>
 
+          {/* Ajoutons quelques liens utiles  */}
+
           {/* Links Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
+
+       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
             {/* Solutions */}
             <div>
               <h5 className="text-lg font-bold mb-4 text-white">
@@ -120,7 +123,7 @@ const Footer = () => {
                   </a>
                 </li>
               </ul>
-            </div>
+            </div> 
 
             {/* Assistance */}
             <div>
@@ -165,9 +168,9 @@ const Footer = () => {
                   </a>
                 </li>
               </ul>
-            </div>
+            </div> 
 
-            {/* Entreprise */}
+            {/* Entreprise  */}
             <div>
               <h5 className="text-lg font-bold mb-4 text-white">
                 Entreprise
@@ -210,7 +213,7 @@ const Footer = () => {
                   </a>
                 </li>
               </ul>
-            </div>
+            </div> 
 
             {/* Légal */}
             <div>
@@ -257,6 +260,7 @@ const Footer = () => {
               </ul>
             </div>
           </div>
+       
 
           {/* Bottom Bar */}
           <div className="border-t border-blue-700/30 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -265,7 +269,7 @@ const Footer = () => {
             </p>
             <div className="flex gap-4">
               <a
-                href="#"
+                href="https://www.facebook.com/profile.php?id=61574652264788"
                 className="w-10 h-10 rounded-full bg-blue-700/50 hover:bg-blue-600 flex items-center justify-center text-white transition-all transform hover:scale-110"
               >
                 <FaFacebookF />
