@@ -18,9 +18,9 @@ const Menu = [
 ];
 
 const DropdownLinks = [
-  { id: 1, name: "Appartements", link: "/#" },
-  { id: 2, name: "Maisons et Villas", link: "/#" },
-  { id: 3, name: "Entreprises", link: "/#" },
+  { id: 1, name: "Appartements", link: "/appartements" },
+  { id: 2, name: "Maisons et Villas", link: "/houses" },
+  { id: 3, name: "Entreprises", link: "/offices" },
 ];
 
 const Navbar = ({ handleOrderPopup, cartItems = [] }) => {
