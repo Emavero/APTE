@@ -10,37 +10,42 @@ import AdminDashboard from "../pages/AdminDashboard";
 import ApartementsPage from "../pages/ApartementsPage";
 import HousesPage from "../pages/HousesPage";
 import OfficesPage from "../pages/OfficesPage";
+import ResetPassword from "../pages/ResetPassword";
+
+
+import Order from "../pages/Order";
+
 
 export default function AppRoutes() {
   return (
     <Routes>
-      {/* Routes protégées 
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <Home />
-          </ProtectedRoute>
-        }
-      />
-      <Route
-        path="/products"
-        element={
-          <ProtectedRoute>
-            <ProductsPage />
-          </ProtectedRoute>
-        }
-      />
-   */}
       {/* Routes publiques */}
       <Route path="/" element={<Home />} />
-      <Route path="/admin" element={<AdminDashboard />} />
       <Route path="/products" element={<ProductsPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/appartements" element={<ApartementsPage />} />
       <Route path="/houses" element={<HousesPage />} />
       <Route path="/offices" element={<OfficesPage />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+
+      {/* Routes protégées */}
+      <Route
+        path="/orders"
+        element={
+          <ProtectedRoute>
+            <Order/>
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <AdminDashboard />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
