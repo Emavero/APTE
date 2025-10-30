@@ -266,10 +266,6 @@ export default function QuoteRequest() {
             <div class="label">MONTANT TOTAL :</div>
             <div class="value">${formatNumber(total)} FCFA</div>
           </div>
-
-          <div class="footer">
-            Ce devis est valable 30 jours. Pour toute question: info@apte-security.com — © ${new Date().getFullYear()} APTE Security
-          </div>
         </div>
       </body>
       </html>`;
@@ -549,10 +545,10 @@ export default function QuoteRequest() {
             </div>
           )}
 
-          {/* Step 3: paramètres */}
+           {/* STEP 3 : paramètres — fond gris clair #f5f5f5 */}
           {step === 3 && (
             <div className="animate-fadeIn">
-              <h2 className="text-2xl font-bold mb-4 text-gray-900">Paramètres de l'établissement</h2>
+              <h2 className="text-2xl font-bold mb-4">Paramètres de l'établissement</h2>
 
               <div className="space-y-4 mb-6">
                 {[
@@ -560,29 +556,31 @@ export default function QuoteRequest() {
                   { key: "entries", label: "Entrées", icon: "🚪", desc: "Nombre d'entrées" },
                   { key: "windows", label: "Fenêtres", icon: "🪟", desc: "Nombre de fenêtres" },
                 ].map(({ key, label, icon, desc }) => (
-                  <div key={key} className="bg-gradient-to-br from-gray-50 to-blue-50 rounded-xl p-4 border border-blue-100">
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                          <span className="text-2xl">{icon}</span> {label}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">{desc}</p>
+                  <div key={key} className="flex items-center justify-between rounded-xl p-4 transition" style={{ background: "#f5f5f5" }}>
+                    <div className="flex items-start space-x-4">
+                      <div className="p-3 bg-blue-100 rounded-xl text-blue-600">
+                        <span style={{ fontSize: 20 }}>{icon}</span>
                       </div>
-                      <span className="text-3xl font-bold text-blue-600">{params[key]}</span>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{label}</h3>
+                        <p className="text-sm text-gray-500">{desc}</p>
+                      </div>
                     </div>
-                    <div className="flex gap-3">
-                      <button onClick={() => setParams((p) => ({ ...p, [key]: Math.max(0, p[key] - 1) }))} className="flex-1 bg-red-100 hover:bg-red-200 text-red-600 py-2 rounded-lg font-bold"><FaMinus /></button>
-                      <button onClick={() => setParams((p) => ({ ...p, [key]: p[key] + 1 }))} className="flex-1 bg-green-100 hover:bg-green-200 text-green-600 py-2 rounded-lg font-bold"><FaPlus /></button>
+
+                    <div className="flex items-center space-x-3">
+                      <button onClick={() => setParams((p) => ({ ...p, [key]: Math.max(p[key] - 1, 0) }))} className="w-8 h-8 flex items-center justify-center border rounded-md hover:bg-gray-100 text-gray-700">
+                        <FaMinus />
+                      </button>
+                      <span className="w-8 text-center text-lg font-semibold text-gray-800">{params[key]}</span>
+                      <button onClick={() => setParams((p) => ({ ...p, [key]: p[key] + 1 }))} className="w-8 h-8 flex items-center justify-center border rounded-md hover:bg-gray-100 text-gray-700">
+                        <FaPlus />
+                      </button>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="bg-blue-50 border-l-4 border-blue-600 p-3 rounded-lg mb-4">
-                <p className="text-sm text-blue-900">💡 Ces paramètres servent à suggérer des quantités adaptées.</p>
-              </div>
-
-              <div className="flex gap-3">
+              <div className="mt-6 flex gap-3">
                 <button onClick={() => setStep(2)} className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-900 px-4 py-3 rounded-xl">← Retour</button>
                 <button onClick={handleContinueStep4} className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-xl">Continuer →</button>
               </div>

@@ -3,12 +3,10 @@ import { FaEye, FaShoppingCart } from "react-icons/fa";
 import productService from "../services/productService";
 
 const categories = [
-  { id: 1, name: "Caméras", icon: "📷" },
-  { id: 2, name: "Alarmes", icon: "🚨" },
-  { id: 3, name: "Détecteurs", icon: "🔥" },
-  { id: 4, name: "Accessoires", icon: "🎛️" },
-  { id: 5, name: "Domotique", icon: "🏠" },
-  { id: 6, name: "Nouveautés", icon: "🆕" },
+  { id: 8, name: "Protection contre les intrusions", icon: "🛡️" },
+  { id: 9, name: "Vidéosurveillance", icon: "📹" },
+  { id: 10, name: "Sécurité incendie", icon: "🔥" },
+  { id: 11, name: "Confort et automatisation", icon: "🤖" },
 ];
 
 const Products = ({ handleOrderPopup, onProductClick, onAddToCart }) => {

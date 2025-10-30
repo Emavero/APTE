@@ -14,7 +14,7 @@ const Menu = [
   { id: 1, name: "Accueil", link: "/" },
   { id: 2, name: "Produits", link: "/products" },
   //{ id: 3, name: "Assistances", link: "/#" },
-  { id: 4, name: "Devis", link: "/#" },
+  { id: 4, name: "Devis", link: "/quote" },
 ];
 
 const DropdownLinks = [
