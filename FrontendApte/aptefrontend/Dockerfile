@@ -1,5 +1,5 @@
 # Image Node pour le développement
-FROM node:22.11.0
+FROM node:20
 
 WORKDIR /app
 
