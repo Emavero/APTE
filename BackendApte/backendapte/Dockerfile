@@ -1,20 +1,20 @@
-# Utiliser une image Python légère
-FROM python:3.11-slim
+# Utiliser une image Node légère
+FROM node:20-alpine
 
 # Définir le répertoire de travail
 WORKDIR /app
 
-# Copier les fichiers requis
-COPY requirements.txt .
+# Copier uniquement les fichiers de dépendances
+COPY package*.json ./
 
-# Installer les dépendances
-RUN pip install --no-cache-dir -r requirements.txt
+# Installer les dépendances avec contournement des peer-deps
+RUN npm install --legacy-peer-deps
 
-# Copier le reste du code
+# Copier tout le code source
 COPY . .
 
-# Exposer le port de Django
-EXPOSE 8000
+# Exposer le port Vite
+EXPOSE 5173
 
-# Commande pour lancer le serveur
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# Lancer Vite en mode développement et écouter toutes les interfaces
+CMD ["npm", "run", "dev", "--", "--host"]

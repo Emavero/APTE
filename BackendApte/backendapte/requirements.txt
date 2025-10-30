@@ -39,7 +39,7 @@ Pygments==2.19.2
 PyJWT==2.10.1
 python-dateutil==2.9.0.post0
 python-decouple==3.8
-pywin32==311
+# pywin32==311  # Ignoré sur Linux
 PyYAML==6.0.2
 pyzmq==27.0.1
 referencing==0.36.2
