@@ -27,7 +27,7 @@ const ImageList = [
     title: "Devis Gratuit et Personnalisé",
     description:
       "Gardez l'esprit tranquille grâce à notre service de télésurveillance. Demandez votre devis gratuit et sur mesure dès maintenant.",
-    url: "/#"
+    url: "/quote"
   },
 ];
 

@@ -120,13 +120,15 @@ const Features = () => {
           className="mt-12 md:mt-16 text-center"
         >
           <div className="inline-flex flex-col sm:flex-row gap-4">
-            <a href=""><button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 px-8 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
+            <a href="/quote"><button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white font-medium py-3 px-8 rounded-full shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300">
               Demander un devis
             </button>
             </a>
-            <button className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-medium py-3 px-8 rounded-full border-2 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 transform hover:scale-105 transition-all duration-300">
-              Contactez-nous
-            </button>
+            <a href="mailto:contact@apte.sn">
+              <button className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 font-medium py-3 px-8 rounded-full border-2 border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700 transform hover:scale-105 transition-all duration-300">
+                Contactez-nous
+              </button>
+            </a>
           </div>
         </div>
       </div>

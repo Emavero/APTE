@@ -118,9 +118,11 @@ const Apartments = () => {
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8">
               Protégez votre appartement avec un système de sécurité intelligent, sans câblage complexe
             </p>
-            <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 shadow-lg text-white">
-              Demander un devis gratuit
-            </button>
+             <a href="/quote">
+               <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 shadow-lg text-white">
+                 Demander un devis gratuit
+                </button>
+             </a>
           </div>
         </div>
       </section>
@@ -328,9 +330,11 @@ const Apartments = () => {
             Obtenez un devis personnalisé gratuit en moins de 24h
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button className="bg-white text-blue-600 px-8 py-4 rounded-lg font-bold hover:bg-blue-50 transition-all transform hover:scale-105 shadow-lg">
+            <a href="/quote">
+            <button className="bg-white text-blue-600 font-bold px-8 py-4 rounded-lg hover:bg-blue-50 transition-all">
               Demander un devis
             </button>
+            </a>
             <button className="bg-transparent border-2 border-white px-8 py-4 rounded-lg font-bold hover:bg-white/10 transition-all text-white">
               Contacter un expert
             </button>

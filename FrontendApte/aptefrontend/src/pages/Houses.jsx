@@ -161,9 +161,11 @@ const Houses = () => {
             <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8">
               Protégez votre maison et votre terrain avec un système de sécurité complet et évolutif
             </p>
-            <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 shadow-lg text-white">
-              Obtenir un devis personnalisé
-            </button>
+             <a href="/quote">
+               <button className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 px-8 py-4 rounded-lg text-lg font-semibold transition-all transform hover:scale-105 shadow-lg text-white">
+                Obtenir un devis personnalisé
+               </button>
+            </a>
           </div>
         </div>
       </section>
