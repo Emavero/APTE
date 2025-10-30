@@ -86,7 +86,7 @@ const Offices = () => {
     },
     {
       question: "Peut-on gérer plusieurs sites depuis une seule interface ?",
-      answer: "Absolument. L'application Ajax PRO permet de gérer un nombre illimité de sites depuis un tableau de bord centralisé avec rapports consolidés."
+      answer: "Absolument. L'application APTE PRO permet de gérer un nombre illimité de sites depuis un tableau de bord centralisé avec rapports consolidés."
     },
     {
       question: "L'installation perturbe-t-elle l'activité ?",
@@ -191,11 +191,11 @@ const Offices = () => {
         </div>
       </section>
 
-      {/* Why Ajax for Offices */}
+      {/* Why APTE for Offices */}
       <section className="py-20 bg-gradient-to-b from-white to-blue-50 dark:from-gray-900 dark:to-gray-800">
         <div className="max-w-7xl mx-auto px-6">
           <h2 className="text-3xl md:text-4xl font-bold text-center mb-4 text-gray-900 dark:text-white">
-            Pourquoi Ajax pour vos bureaux ?
+            Pourquoi APTE pour vos bureaux ?
           </h2>
           <p className="text-center text-gray-600 dark:text-gray-400 mb-12 max-w-3xl mx-auto">
             Une solution professionnelle complète pour la sécurité de vos espaces de travail
