@@ -1,3 +1,4 @@
+# apps/quotes/urls.py
 from django.urls import path
 from .views import QuoteListCreateView, QuoteDetailView
 

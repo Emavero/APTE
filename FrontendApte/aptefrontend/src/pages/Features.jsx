@@ -12,7 +12,7 @@ const FeaturesData = [
     description: "Systèmes d'alarme avancés pour détecter toute intrusion",
     icon: <FaShieldAlt className="text-4xl" />,
     aosDelay: "0",
-    link: "/#",
+    link: "/intrusion",
     gradient: "from-blue-500 to-blue-600",
   },
   {
@@ -57,15 +57,8 @@ const Features = () => {
             data-aos="fade-up" 
             className="text-sm font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2"
           >
-            Nos Solutions
+            Nos Produits
           </p>
-          <h1 
-            data-aos="fade-up" 
-            data-aos-delay="50"
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mt-2"
-          >
-            Fonctionnalités principales
-          </h1>
           <p
             data-aos="fade-up"
             data-aos-delay="100"

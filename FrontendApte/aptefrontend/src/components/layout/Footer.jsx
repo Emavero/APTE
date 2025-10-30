@@ -77,15 +77,15 @@ const Footer = () => {
 
           {/* Links Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
-            {/* Solutions */}
+            {/* Produits */}
             <div>
               <h5 className="text-lg font-bold mb-4 text-white">
-                Solutions
+                Produits
               </h5>
               <ul className="space-y-3 text-sm">
                 <li>
                   <a
-                    href="#"
+                    href="/intrusion"
                     className="text-gray-300 hover:text-blue-400 transition-colors flex items-center gap-2 group"
                   >
                     <span className="w-1 h-1 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
@@ -110,19 +110,10 @@ const Footer = () => {
                     Sécurité incendie
                   </a>
                 </li>
-                <li>
-                  <a
-                    href="#"
-                    className="text-gray-300 hover:text-blue-400 transition-colors flex items-center gap-2 group"
-                  >
-                    <span className="w-1 h-1 bg-blue-400 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"></span>
-                    Témoignages clients
-                  </a>
-                </li>
               </ul>
             </div>
 
-            {/* Assistance */}
+            {/* Assistance 
             <div>
               <h5 className="text-lg font-bold mb-4 text-white">
                 Assistance
@@ -165,7 +156,7 @@ const Footer = () => {
                   </a>
                 </li>
               </ul>
-            </div>
+            </div> */}
 
             {/* Entreprise */}
             <div>

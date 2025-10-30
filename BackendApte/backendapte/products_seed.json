@@ -1,0 +1,167 @@
+[
+  {
+    "model": "products.category",
+    "pk": 8,
+    "fields": { "name": "Protection contre les intrusions", "slug": "intrusions" }
+  },
+  {
+    "model": "products.category",
+    "pk": 9,
+    "fields": { "name": "Vidéosurveillance", "slug": "videosurveillance" }
+  },
+  {
+    "model": "products.category",
+    "pk": 10,
+    "fields": { "name": "Sécurité incendie", "slug": "securite-incendie" }
+  },
+  {
+    "model": "products.category",
+    "pk": 11,
+    "fields": { "name": "Confort et automatisation", "slug": "confort-automatisation" }
+  },
+
+  {
+    "model": "products.product",
+    "pk": 1,
+    "fields": {
+      "name": "Capteur de mouvement intérieur",
+      "slug": "capteur-mouvement",
+      "description": "Détecteur de mouvement pour la sécurité intérieure.",
+      "price": "25000.00",
+      "stock": 50,
+      "category": 8,
+      "image": "",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 2,
+    "fields": {
+      "name": "Bouton de panique sans fil",
+      "slug": "bouton-panique",
+      "description": "Permet d'envoyer une alerte immédiate en cas d'urgence.",
+      "price": "18000.00",
+      "stock": 100,
+      "category": 8,
+      "image": "",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 3,
+    "fields": {
+      "name": "Caméra filaire infrarouge",
+      "slug": "camera-infrarouge",
+      "description": "Caméra de surveillance filaire avec vision nocturne infrarouge.",
+      "price": "55000.00",
+      "stock": 25,
+      "category": 9,
+      "image": "",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 4,
+    "fields": {
+      "name": "Caméra Wi-Fi intérieure",
+      "slug": "camera-wifi",
+      "description": "Caméra Wi-Fi HD avec détection de mouvement.",
+      "price": "45000.00",
+      "stock": 40,
+      "category": 9,
+      "image": "",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 5,
+    "fields": {
+      "name": "Enregistreur vidéo réseau HDMI",
+      "slug": "nvr-hdmi",
+      "description": "NVR avec sortie HDMI pour jusqu’à 8 caméras.",
+      "price": "120000.00",
+      "stock": 10,
+      "category": 9,
+      "image": "",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 6,
+    "fields": {
+      "name": "Détecteur de fumée intelligent",
+      "slug": "detecteur-fumee",
+      "description": "Capteur combiné de fumée et de chaleur avec alarme sonore.",
+      "price": "28000.00",
+      "stock": 60,
+      "category": 10,
+      "image": "",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 7,
+    "fields": {
+      "name": "Détecteur de monoxyde de carbone (CO)",
+      "slug": "detecteur-co",
+      "description": "Détecteur de CO pour prévenir les intoxications domestiques.",
+      "price": "32000.00",
+      "stock": 40,
+      "category": 10,
+      "image": "",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 8,
+    "fields": {
+      "name": "Contrôleur d’éclairage intelligent",
+      "slug": "controleur-eclairage",
+      "description": "Système connecté pour la gestion de l’éclairage à distance.",
+      "price": "40000.00",
+      "stock": 35,
+      "category": 11,
+      "image": "",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  },
+  {
+    "model": "products.product",
+    "pk": 9,
+    "fields": {
+      "name": "Détecteur de fuite d’eau",
+      "slug": "detecteur-fuite",
+      "description": "Détecteur automatique de fuites d’eau pour prévenir les dégâts.",
+      "price": "27000.00",
+      "stock": 30,
+      "category": 11,
+      "image": "",
+      "is_active": true,
+      "created_at": "2025-01-01T00:00:00Z",
+      "updated_at": "2025-01-01T00:00:00Z"
+    }
+  }
+]

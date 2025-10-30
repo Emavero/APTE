@@ -11,6 +11,9 @@ import ApartementsPage from "../pages/ApartementsPage";
 import HousesPage from "../pages/HousesPage";
 import OfficesPage from "../pages/OfficesPage";
 import ResetPassword from "../pages/ResetPassword";
+import IntrusionProtectionPage from "../pages/IntrusionProtectionPage";
+import QuoteRequestPage from "../pages/QuoteRequestPages";
+
 
 
 import Order from "../pages/Order";
@@ -28,6 +31,10 @@ export default function AppRoutes() {
       <Route path="/houses" element={<HousesPage />} />
       <Route path="/offices" element={<OfficesPage />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/reset-password/:token" element={<ResetPassword />} />
+      <Route path="/intrusion" element={<IntrusionProtectionPage />} />
+      <Route path="/quote" element={<QuoteRequestPage/>} />
+
 
       {/* Routes protégées */}
       <Route

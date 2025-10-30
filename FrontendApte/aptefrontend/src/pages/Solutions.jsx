@@ -57,13 +57,7 @@ const Solutions = () => {
           >
             Nos Solutions
           </p>
-          <h2
-            data-aos="fade-up"
-            data-aos-delay="50"
-            className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4"
-          >
-            Aperçu des solutions
-          </h2>
+          
           <p
             data-aos="fade-up"
             data-aos-delay="100"

@@ -11,7 +11,7 @@ const ImageList = [
     title: "Solutions de vidéosurveillance modernes et fiables",
     description:
       "Découvrez notre gamme complète de caméras de sécurité adaptées à tous vos besoins. Protégez vos locaux, vos proches et vos biens grâce à des technologies avancées offrant une image claire de jour comme de nuit.",
-    url: "/#"
+    url: "/products"
   },
   {
     id: 2,
@@ -87,7 +87,6 @@ const Hero = ({ handleOrderPopup }) => {
                   >
                     <a href={data.url}>
                       <button
-                        onClick={handleOrderPopup}
                         className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 
                                  text-white font-medium py-2.5 sm:py-3 px-6 sm:px-8 rounded-full 
                                  shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300"
@@ -95,14 +94,6 @@ const Hero = ({ handleOrderPopup }) => {
                         Voir Plus
                       </button>
                     </a>
-                    <button
-                      className="bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 
-                               font-medium py-2.5 sm:py-3 px-6 sm:px-8 rounded-full border-2 
-                               border-blue-600 dark:border-blue-400 hover:bg-blue-50 dark:hover:bg-gray-700
-                               transform hover:scale-105 transition-all duration-300"
-                    >
-                      Devis Gratuit
-                    </button>
                   </div>
                 </div>
                 
