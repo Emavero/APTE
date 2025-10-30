@@ -1,5 +1,5 @@
 # Image Node pour le développement
-FROM node:20
+FROM node:20-bookworm-slim
 
 WORKDIR /app
 
