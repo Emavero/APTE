@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:jod-alpine3.21
 
 WORKDIR /app
 
@@ -14,5 +14,5 @@ COPY . .
 # Exposer le port Vite
 EXPOSE 5173
 
-# Lancer Vite via npm script (utilise node_modules/.bin automatiquement)
+# Démarrer l'application 
 CMD ["npm", "run", "dev", "--", "--host"]
