@@ -136,7 +136,14 @@ const ProductDetails = ({ product, onClose, handleOrderPopup, onAddToCart }) => 
 
                   {productDetails.is_active && (
                     <span className="flex items-center gap-1 text-sm text-green-600 dark:text-green-400">
-                      <FaCheck className="text-xs" /> En stock
+                      {/* Affichage du stock  */}
+                     <p className="text-red-600 dark:text-blue-400 font-bold text-sm md:text-base mb-2">
+                       {product.stock > 0 ? (
+                         <span className="text-green-600"> Disponible : {product.stock}  </span>
+                       ) : (
+                         <span className="text-red-600"> En rupture  </span>
+                       )}
+                    </p>
                     </span>
                   )}
                 </div>
@@ -228,7 +235,7 @@ const ProductDetails = ({ product, onClose, handleOrderPopup, onAddToCart }) => 
                     </div>
                     <div>
                       <p className="text-xs text-gray-600 dark:text-gray-400">Livraison</p>
-                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Gratuite</p>
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white">Rapide</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

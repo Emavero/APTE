@@ -204,38 +204,82 @@ export default function AdminDashboard() {
               )}
 
               {/* Orders tab */}
-              {activeTab==='orders' && (
-                <>
-                  <div className="mb-4 relative max-w-xs">
-                    <FaSearch className="absolute left-3 top-3 text-gray-400" />
-                    <input type="text" placeholder="Rechercher commande..." value={searchOrder} onChange={e=>setSearchOrder(e.target.value)} className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600" />
-                  </div>
-                  <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
-                    <table className="w-full text-left border-collapse">
-                      <thead className="bg-gray-100 dark:bg-gray-700">
-                        <tr>
-                          <th className="px-4 py-2">ID</th>
-                          <th className="px-4 py-2">Client</th>
-                          <th className="px-4 py-2">Total</th>
-                          <th className="px-4 py-2">Statut</th>
-                          <th className="px-4 py-2">Date</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredOrders.map(o=>(
-                          <tr key={o.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 transition">
-                            <td className="px-4 py-2">{o.id}</td>
-                            <td className="px-4 py-2">{o.user}</td>
-                            <td className="px-4 py-2">{o.total_price} FCFA</td>
-                            <td className="px-4 py-2">{o.status}</td>
-                            <td className="px-4 py-2">{new Date(o.created_at).toLocaleDateString()}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </>
-              )}
+{activeTab==='orders' && (
+  <>
+    <div className="mb-4 relative max-w-xs">
+      <FaSearch className="absolute left-3 top-3 text-gray-400" />
+      <input 
+        type="text" 
+        placeholder="Rechercher commande..." 
+        value={searchOrder} 
+        onChange={e=>setSearchOrder(e.target.value)} 
+        className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border border-gray-300 dark:border-gray-600" 
+      />
+    </div>
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow overflow-hidden">
+      <table className="w-full text-left border-collapse">
+        <thead className="bg-gray-100 dark:bg-gray-700">
+          <tr>
+            <th className="px-4 py-2">ID</th>
+            <th className="px-4 py-2">Client</th>
+            <th className="px-4 py-2">Adresse</th>
+            <th className="px-4 py-2">Ville</th>
+            <th className="px-4 py-2">Articles</th>
+            <th className="px-4 py-2">Total</th>
+            <th className="px-4 py-2">Statut</th>
+            <th className="px-4 py-2">Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {filteredOrders.map(o=>(
+            <tr key={o.id} className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 transition">
+              <td className="px-4 py-2">#{o.id}</td>
+              <td className="px-4 py-2">{o.delivery_name}</td>
+              <td className="px-4 py-2">{o.delivery_address}</td>
+              <td className="px-4 py-2">{o.delivery_city}</td>
+
+              <td className="px-4 py-2">
+                {/* Afficher les produits */}
+                <div className="space-y-1">
+                  {o.items_data && o.items_data.length > 0 ? (
+                    o.items_data.map((item, idx) => (
+                      <div key={idx} className="text-sm">
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {item.product.name}
+                        </span>
+                        <span className="text-gray-600 dark:text-gray-400 ml-2">
+                          : {item.quantity}
+                        </span>
+                      </div>
+                    ))
+                  ) : (
+                    <span className="text-gray-500">Aucun produit</span>
+                  )}
+                </div>
+              </td>
+              <td className="px-4 py-2 font-bold text-blue-600 dark:text-blue-400">
+                {parseFloat(o.total_price).toLocaleString()} FCFA
+              </td>
+              <td className="px-4 py-2">
+                <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+                  o.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                  o.status === 'completed' ? 'bg-green-100 text-green-800' :
+                  o.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                  'bg-gray-100 text-gray-800'
+                }`}>
+                  {o.status}
+                </span>
+              </td>
+              <td className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400">
+                {new Date(o.created_at).toLocaleDateString('fr-FR')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </>
+)}
 
               {/* Products tab */}
               {activeTab==='products' && (

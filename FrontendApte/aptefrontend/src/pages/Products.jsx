@@ -176,7 +176,16 @@ const Products = ({ handleOrderPopup, onProductClick, onAddToCart }) => {
                     <p className="text-blue-600 dark:text-blue-400 font-bold text-sm md:text-base mb-2">
                       {product.price} FCFA
                     </p>
-
+                    
+                     {/* Affichage du stock */}
+                     <p className="text-red-600 dark:text-blue-400 font-bold text-sm md:text-base mb-2">
+                       {product.stock > 0 ? (
+                         <span className="text-green-600"> Disponible : {product.stock}  </span>
+                       ) : (
+                         <span className="text-red-600"> En rupture  </span>
+                       )}
+                    </p>
+                   
                     <div className="flex gap-1 md:gap-2">
                       <button
                         onClick={() => handleViewDetails(product)}
