@@ -164,7 +164,7 @@ interroge le prestataire et resynchronise la commande.
 
 ```bash
 cd BackendApte/backendapte
-pytest                                  # 163 tests
+pytest                                  # 191 tests
 pytest --cov=apps --cov-report=term-missing
 ruff check . && ruff format --check .
 
@@ -173,7 +173,7 @@ npm run lint
 npm run build
 ```
 
-Les tests couvrent en particulier : l'arithmétique monétaire, l'équilibre
+Couverture : 90 % des applications. Les tests couvrent en particulier : l'arithmétique monétaire, l'équilibre
 comptable des factures, la numérotation séquentielle, la réservation et la
 restitution du stock, la machine à états des commandes, la vérification de
 signature des webhooks (y compris signatures forgées et rejeux), le
