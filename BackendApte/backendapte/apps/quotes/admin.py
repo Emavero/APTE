@@ -1,33 +1,53 @@
-# apps/quotes/admin.py
+"""Administration des devis."""
+
 from django.contrib import admin
+
+from apps.common.money import format_money
+
 from .models import Quote, QuoteItem
 
 
 class QuoteItemInline(admin.TabularInline):
     model = QuoteItem
-    extra = 1
-    readonly_fields = ['subtotal']
+    extra = 0
+    fields = ("product", "product_name", "unit_price", "quantity", "line_total")
+    readonly_fields = ("product_name", "unit_price", "line_total")
+    autocomplete_fields = ("product",)
 
 
 @admin.register(Quote)
 class QuoteAdmin(admin.ModelAdmin):
-    list_display = ['id', 'user', 'status', 'total_estimate', 'created_at']
-    list_filter = ['status', 'created_at']
-    search_fields = ['user__username', 'description']
-    readonly_fields = ['total_estimate', 'created_at', 'updated_at']
+    list_display = ("reference", "contact_name", "user", "status", "total_display", "created_at")
+    list_filter = ("status", "created_at")
+    list_select_related = ("user",)
+    search_fields = (
+        "reference",
+        "contact_name",
+        "contact_email",
+        "contact_phone",
+        "user__email",
+        "description",
+    )
+    date_hierarchy = "created_at"
+    readonly_fields = ("reference", "total_estimate", "currency", "created_at", "updated_at")
     inlines = [QuoteItemInline]
 
     fieldsets = (
-        ('Utilisateur', {'fields': ('user',)}),
-        ('Informations', {'fields': ('description', 'message')}),
-        ('Paramètres', {'fields': ('rooms', 'entries', 'windows')}),
-        ('Totaux', {'fields': ('total_estimate',)}),
-        ('Statut', {'fields': ('status',)}),
-        ('Dates', {'fields': ('created_at', 'updated_at')}),
+        ("Demande", {"fields": ("reference", "status", "user")}),
+        ("Contact", {"fields": ("contact_name", "contact_email", "contact_phone")}),
+        ("Besoin", {"fields": ("description", "message")}),
+        ("Dimensionnement", {"fields": ("rooms", "entries", "windows")}),
+        ("Estimation", {"fields": ("currency", "total_estimate")}),
+        ("Dates", {"fields": ("created_at", "updated_at"), "classes": ("collapse",)}),
     )
 
+    @admin.display(description="Estimation")
+    def total_display(self, obj: Quote) -> str:
+        return format_money(obj.total_estimate)
 
-@admin.register(QuoteItem)
-class QuoteItemAdmin(admin.ModelAdmin):
-    list_display = ['id', 'quote', 'product', 'quantity', 'subtotal']
-    readonly_fields = ['subtotal']
+    def save_related(self, request, form, formsets, change):
+        """Réaligne l'estimation sur les lignes après édition dans l'admin."""
+        super().save_related(request, form, formsets, change)
+        quote = form.instance
+        quote.total_estimate = quote.compute_total()
+        quote.save(update_fields=["total_estimate", "updated_at"])
