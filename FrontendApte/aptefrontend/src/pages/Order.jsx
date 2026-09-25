@@ -15,8 +15,25 @@ import {
 } from "react-icons/fa";
 import orderService from "../services/orderService";
 import { CartContext } from "../context/CartContext";
+import { formatMoney } from "../utils/currency";
 
-const Order = ({ isOpen, onClose }) => {
+/** Aplatit une réponse d'erreur DRF en un message lisible. */
+function extractErrorMessage(err) {
+  const data = err?.response?.data;
+  if (!data) return "Erreur lors de la création de la commande";
+  if (typeof data === "string") return data;
+  if (data.detail) return data.detail;
+  if (data.errors && typeof data.errors === "object") {
+    return Object.entries(data.errors)
+      .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+      .join(" | ");
+  }
+  return Object.entries(data)
+    .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+    .join(" | ");
+}
+
+const Order = ({ isOpen, onClose, onOrderPlaced }) => {
   const { cartItems, removeFromCart, updateQuantity, clearCart } = useContext(CartContext);
   
   const [step, setStep] = useState(1); // 1: Panier, 2: Informations livraison, 3: Paiement
@@ -35,12 +52,15 @@ const Order = ({ isOpen, onClose }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [order, setOrder] = useState(null);
 
-  const calculateTotal = () => {
-    return cartItems.reduce((total, item) => {
-      return total + parseFloat(item.product.price) * item.quantity;
-    }, 0);
-  };
+  // Le total n'est qu'un indicatif d'affichage : le montant facturé est
+  // recalculé par le serveur depuis les prix catalogue.
+  const calculateTotal = () =>
+    cartItems.reduce(
+      (total, item) => total + Number.parseFloat(item.product.price ?? 0) * item.quantity,
+      0,
+    );
 
   const handleContinueToDelivery = () => {
     if (cartItems.length === 0) {
@@ -138,43 +158,29 @@ const Order = ({ isOpen, onClose }) => {
         orderData.phone_number = wavePhoneNumber;
       }
 
-      console.log("Données envoyées:", orderData);
-      const response = await orderService.createOrder(orderData);
-      console.log("Commande créée:", response.data);
+      const { data } = await orderService.createOrder(orderData);
+      setOrder(data);
+      onOrderPlaced?.(data);
 
-      if (paymentMethod === "wave" && response.data.wave_payment_url) {
-        setSuccess("Redirection vers Wave pour le paiement...");
+      // Le panier est validé côté serveur : il est vidé dès que la commande est
+      // enregistrée, y compris pour un paiement Wave encore à confirmer.
+      await clearCart().catch(() => {});
+
+      if (data.payment_url) {
+        setSuccess(data.message || "Redirection vers Wave pour le paiement...");
         setTimeout(() => {
-          window.location.href = response.data.wave_payment_url;
+          window.location.href = data.payment_url;
         }, 1500);
-      } else {
-        setSuccess(response.data.message || "Commande créée avec succès!");
-        clearCart();
-        
-        setTimeout(() => {
-          handleClose();
-        }, 2500);
+        return;
       }
+
+      const reference = data.invoice?.number ? ` Facture ${data.invoice.number}.` : "";
+      setSuccess(`${data.message || "Commande créée avec succès !"}${reference}`);
+      setTimeout(() => {
+        handleClose();
+      }, 4000);
     } catch (err) {
-      console.error("Erreur lors de la création de la commande:", err);
-      
-      if (err.response && err.response.data) {
-        if (typeof err.response.data === 'object') {
-          const errorMessages = Object.entries(err.response.data)
-            .map(([key, value]) => {
-              if (Array.isArray(value)) {
-                return `${key}: ${value.join(', ')}`;
-              }
-              return `${key}: ${value}`;
-            })
-            .join(' | ');
-          setError(errorMessages);
-        } else {
-          setError(err.response.data.detail || err.response.data.error || "Erreur lors de la création de la commande");
-        }
-      } else {
-        setError("Erreur lors de la création de la commande");
-      }
+      setError(extractErrorMessage(err));
     } finally {
       setLoading(false);
     }
@@ -193,6 +199,7 @@ const Order = ({ isOpen, onClose }) => {
     });
     setError(null);
     setSuccess(null);
+    setOrder(null);
     onClose();
   };
 
@@ -269,7 +276,22 @@ const Order = ({ isOpen, onClose }) => {
           {success && (
             <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4 mb-6 flex items-center gap-2">
               <FaCheck className="text-green-600" />
-              <p className="text-green-600 dark:text-green-400">{success}</p>
+              <p className="text-green-600 dark:text-green-400">
+                {success}
+                {order?.invoice?.number && (
+                  <>
+                    {" "}
+                    <a
+                      href={orderService.getInvoicePrintUrl(order.id)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="underline font-semibold"
+                    >
+                      Voir la facture
+                    </a>
+                  </>
+                )}
+              </p>
             </div>
           )}
 
@@ -307,7 +329,7 @@ const Order = ({ isOpen, onClose }) => {
                             {item.product.name}
                           </h3>
                           <p className="text-blue-600 dark:text-blue-400 font-bold mb-2">
-                            {parseFloat(item.product.price).toFixed(2)} FCFA
+                            {formatMoney(item.product.price)}
                           </p>
 
                           <div className="flex items-center gap-2">
@@ -331,7 +353,7 @@ const Order = ({ isOpen, onClose }) => {
 
                         <div className="text-right flex flex-col justify-between">
                           <p className="font-bold text-gray-900 dark:text-white">
-                            {(parseFloat(item.product.price) * item.quantity).toFixed(2)} FCFA
+                            {formatMoney(Number.parseFloat(item.product.price ?? 0) * item.quantity)}
                           </p>
                           <button
                             onClick={() => removeFromCart(item.product.id)}
@@ -348,7 +370,7 @@ const Order = ({ isOpen, onClose }) => {
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-3 mb-6">
                     <div className="flex justify-between text-gray-600 dark:text-gray-400">
                       <span>Sous-total:</span>
-                      <span>{total.toFixed(2)} FCFA</span>
+                      <span>{formatMoney(total)}</span>
                     </div>
                     <div className="flex justify-between text-gray-600 dark:text-gray-400">
                       <span>Livraison:</span>
@@ -356,7 +378,7 @@ const Order = ({ isOpen, onClose }) => {
                     </div>
                     <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white border-t border-gray-200 dark:border-gray-700 pt-3">
                       <span>Total:</span>
-                      <span className="text-blue-600">{total.toFixed(2)} FCFA</span>
+                      <span className="text-blue-600">{formatMoney(total)}</span>
                     </div>
                   </div>
 
@@ -565,7 +587,7 @@ const Order = ({ isOpen, onClose }) => {
                 </div>
                 <div className="flex justify-between text-lg font-bold text-gray-900 dark:text-white">
                   <span>Total à payer:</span>
-                  <span className="text-blue-600">{total.toFixed(2)} FCFA</span>
+                  <span className="text-blue-600">{formatMoney(total)}</span>
                 </div>
               </div>
 

@@ -1,6 +1,5 @@
-import { useState, useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import {
   MdAlternateEmail,
   MdPhone
@@ -11,9 +10,13 @@ import {
   FaRegEye,
   FaRegEyeSlash
 } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
+// Importée pour que Vite l'intègre au bundle (un chemin "src/..." littéral
+// n'est pas résolu dans la version construite).
+import background from "../assets/bglogregi.jpg";
 
 const Register = () => {
-  const { register } = useContext(AuthContext);
+  const { register } = useAuth();
   const navigate = useNavigate();
 
   const [form, setForm] = useState({
@@ -46,13 +49,16 @@ const Register = () => {
       await register(form);
       navigate("/login");
     } catch (err) {
-      if (err.response && err.response.data) {
-        const messages = Object.entries(err.response.data)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join(" | ");
-        setError(messages);
+      const data = err?.response?.data;
+      const fields = data?.errors && typeof data.errors === "object" ? data.errors : data;
+      if (fields && typeof fields === "object") {
+        setError(
+          Object.entries(fields)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join(" | "),
+        );
       } else {
-        setError("Erreur lors de l'inscription");
+        setError(data?.detail || "Erreur lors de l'inscription");
       }
     } finally {
       setLoading(false);
@@ -63,7 +69,7 @@ const Register = () => {
     <div
       className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat relative"
       style={{
-        backgroundImage: "url('src/assets/bglogregi.jpg')",
+        backgroundImage: `url(${background})`,
       }}
     >
       {/* Overlay sombre pour lisibilité */}
@@ -83,9 +89,9 @@ const Register = () => {
         </h1>
         <p className="text-xs md:text-sm text-gray-300 text-center">
           Vous avez déjà un compte ?{" "}
-          <a href="/login" className="text-blue-400 hover:underline">
+          <Link to="/login" className="text-blue-400 hover:underline">
             Connectez-vous
-          </a>
+          </Link>
         </p>
 
         {error && (

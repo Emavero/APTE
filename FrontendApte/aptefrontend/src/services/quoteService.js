@@ -1,35 +1,15 @@
 import apiClient from "./apiClient";
 
 const quoteService = {
-  // 🔹 Récupérer tous les devis
-  getQuotes: () =>
-    apiClient.get("quotes/", {
-      headers: { "Content-Type": "application/json" },
-    }),
+  getQuotes: (params = {}) => apiClient.get("quotes/", { params }),
 
-  // 🔹 Récupérer un devis spécifique
-  getQuoteDetail: (quoteId) =>
-    apiClient.get(`quotes/${quoteId}/`, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  getQuoteDetail: (quoteId) => apiClient.get(`quotes/${quoteId}/`),
 
-  // 🔹 Créer un nouveau devis
-  createQuote: (data) =>
-    apiClient.post("quotes/", data, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  /** L'estimation est chiffrée côté serveur depuis les prix catalogue. */
+  createQuote: (data) => apiClient.post("quotes/", data),
 
-  // 🔹 Mettre à jour un devis
-  updateQuote: (quoteId, data) =>
-    apiClient.patch(`quotes/${quoteId}/`, data, {
-      headers: { "Content-Type": "application/json" },
-    }),
-
-  // 🔹 Supprimer un devis
-  deleteQuote: (quoteId) =>
-    apiClient.delete(`quotes/${quoteId}/`, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  /** Traitement commercial du devis : réservé au personnel. */
+  updateQuoteStatus: (quoteId, status) => apiClient.post(`quotes/${quoteId}/status/`, { status }),
 };
 
 export default quoteService;

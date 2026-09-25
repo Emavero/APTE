@@ -1,43 +1,26 @@
 import apiClient from "./apiClient";
 
 const productService = {
-  getProducts: (params = {}) =>
-    apiClient.get("products/", {
-      params,
-      headers: { "Content-Type": "application/json" },
-    }),
+  getProducts: (params = {}) => apiClient.get("products/", { params }),
 
-  searchProducts: (query) =>
-    apiClient.get("products/", {
-      params: { search: query },
-      headers: { "Content-Type": "application/json" },
-    }),
+  searchProducts: (query) => apiClient.get("products/", { params: { search: query } }),
 
   getProductsByCategory: (categoryId) =>
-    apiClient.get("products/", {
-      params: { category: categoryId },
-      headers: { "Content-Type": "application/json" },
-    }),
+    apiClient.get("products/", { params: { category: categoryId } }),
 
   getProductsWithPagination: (page = 1, pageSize = 12) =>
-    apiClient.get("products/", {
-      params: { page, page_size: pageSize },
-      headers: { "Content-Type": "application/json" },
-    }),
+    apiClient.get("products/", { params: { page, page_size: pageSize } }),
 
-  getProductDetail: (productId) =>
-    apiClient.get(`products/${productId}/`, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  getProductDetail: (productId) => apiClient.get(`products/${productId}/`),
 
-  createProduct: (data) =>
-    apiClient.post("products/", data), // pas de Content-Type
+  getCategories: () => apiClient.get("products/categories/"),
 
-  updateProduct: (productId, data) =>
-    apiClient.patch(`products/${productId}/`, data), // pas de Content-Type
+  // Les envois multipart laissent axios fixer la frontière du Content-Type.
+  createProduct: (data) => apiClient.post("products/", data),
 
-  deleteProduct: (productId) =>
-    apiClient.delete(`products/${productId}/`)
+  updateProduct: (productId, data) => apiClient.patch(`products/${productId}/`, data),
+
+  deleteProduct: (productId) => apiClient.delete(`products/${productId}/`),
 };
 
 export default productService;

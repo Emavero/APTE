@@ -7,14 +7,15 @@ const DarkMode = () => {
     localStorage.getItem("theme") ? localStorage.getItem("theme") : "light"
   );
 
-  const element = document.documentElement; // html element
-
   React.useEffect(() => {
+    // documentElement est lu dans l'effet : le sortir du corps du composant
+    // évite une dépendance instable entre deux rendus.
+    const { classList } = document.documentElement;
     if (theme === "dark") {
-      element.classList.add("dark");
+      classList.add("dark");
       localStorage.setItem("theme", "dark");
     } else {
-      element.classList.remove("dark");
+      classList.remove("dark");
       localStorage.setItem("theme", "light");
     }
   }, [theme]);

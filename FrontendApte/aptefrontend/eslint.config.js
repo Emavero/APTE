@@ -23,7 +23,17 @@ export default defineConfig([
       },
     },
     rules: {
-      'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
+      'no-unused-vars': [
+        'error',
+        { varsIgnorePattern: '^[A-Z_]', argsIgnorePattern: '^_' },
+      ],
+      // Un contexte est colocalisé avec son fournisseur et son hook : c'est
+      // plus lisible qu'un fichier par symbole, et cela ne coûte qu'un
+      // rafraîchissement complet de ces deux fichiers en développement.
+      'react-refresh/only-export-components': [
+        'error',
+        { allowExportNames: ['AuthContext', 'CartContext', 'useAuth', 'useCart'] },
+      ],
     },
   },
 ])

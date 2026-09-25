@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   FaTimes,
   FaShoppingCart,
@@ -13,33 +13,36 @@ import {
 } from "react-icons/fa";
 import productService from "../services/productService";
 
-const ProductDetails = ({ product, onClose, handleOrderPopup, onAddToCart }) => {
-  const [selectedImage, setSelectedImage] = useState(0);
+const ProductDetails = ({ product, onClose, onAddToCart }) => {
+  const [selectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [productDetails, setProductDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const fetchProductDetails = useCallback(
+    async (productId) => {
+      try {
+        setLoading(true);
+        const response = await productService.getProductDetail(productId);
+        setProductDetails(response.data);
+        setError(null);
+      } catch {
+        // Repli sur les données déjà connues du produit plutôt qu'un écran vide.
+        setProductDetails(product);
+        setError("Erreur lors du chargement des détails complets");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [product],
+  );
+
   useEffect(() => {
     if (product?.id) {
       fetchProductDetails(product.id);
     }
-  }, [product?.id]);
-
-  const fetchProductDetails = async (productId) => {
-    try {
-      setLoading(true);
-      const response = await productService.getProductDetail(productId);
-      setProductDetails(response.data);
-      setError(null);
-    } catch (err) {
-      console.error("Erreur lors du chargement des détails:", err);
-      setProductDetails(product);
-      setError("Erreur lors du chargement des détails complets");
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [product?.id, fetchProductDetails]);
 
   if (!productDetails) return null;
 

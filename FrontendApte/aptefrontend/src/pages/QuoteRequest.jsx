@@ -1,5 +1,5 @@
 // src/components/QuoteRequest.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { FaChevronDown, FaDownload, FaPlus, FaMinus, FaCheck, FaEye } from "react-icons/fa";
 import productService from "../services/productService";
 import quoteService from "../services/quoteService";
@@ -25,7 +25,6 @@ export default function QuoteRequest() {
   const [submitted, setSubmitted] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const pageRef = useRef(null); // optionally used for preview
 
   // Charger html2pdf (option choisie)
   useEffect(() => {
@@ -164,7 +163,7 @@ export default function QuoteRequest() {
   const calculateTotal = () => selectedProducts.reduce((sum, p) => sum + (p.price || 0) * (p.qty || 0), 0);
 
   // Crée le HTML compact pour le pdf (optimisé pour tenir sur 1 page A4)
-  const buildPdfHtml = ({ quoteNumber, preview = false } = {}) => {
+  const buildPdfHtml = ({ quoteNumber } = {}) => {
     const total = calculateTotal();
     // URL QR simple (Google Chart) encodant le numéro du devis (runtime fetch by browser)
     const qrData = encodeURIComponent(`DEVIS:${quoteNumber}`);
@@ -297,7 +296,7 @@ export default function QuoteRequest() {
     setPreviewLoading(true);
     try {
       const quoteNumber = `DEV${new Date().getTime().toString().slice(-6)}`;
-      const html = buildPdfHtml({ quoteNumber, preview: true });
+      const html = buildPdfHtml({ quoteNumber });
 
       // créer un blob PDF via html2pdf (output: blob)
       const opt = {
@@ -344,7 +343,7 @@ export default function QuoteRequest() {
     }
 
     const quoteNumber = `DEV${new Date().getTime().toString().slice(-6)}`;
-    const html = buildPdfHtml({ quoteNumber, preview: false });
+    const html = buildPdfHtml({ quoteNumber });
     const opt = {
       margin: [6, 6, 6, 6],
       filename: `devis_${quoteNumber}.pdf`,
@@ -375,25 +374,30 @@ export default function QuoteRequest() {
 
   const submitQuote = async () => {
     try {
-      const total = calculateTotal();
+      // L'estimation n'est pas transmise : elle est chiffrée par le serveur
+      // depuis les prix catalogue, pour qu'un devis ne puisse pas être
+      // enregistré avec un montant fabriqué côté navigateur.
       const payload = {
         description: `Systèmes: ${selectedSystems.join(", ")}`,
-        message: `Fonctionnalités: ${selectedFeatures.join(", ")} | Pièces: ${params.rooms}, Entrées: ${params.entries}, Fenêtres: ${params.windows}`,
-        total_estimate: total,
+        message: `Fonctionnalités: ${selectedFeatures.join(", ")}`,
+        rooms: Number(params.rooms) || 0,
+        entries: Number(params.entries) || 0,
+        windows: Number(params.windows) || 0,
         items_write: selectedProducts.map((p) => ({ product: p.id, quantity: p.qty })),
       };
 
-      console.log("Payload envoyé:", payload);
-      const response = await quoteService.createQuote(payload);
-      console.log("Réponse du serveur:", response);
+      await quoteService.createQuote(payload);
 
-      // ouvrir l'aperçu (optionnel) puis forcer le téléchargement
-      await previewPdf(); // affiche l'aperçu
-      downloadPdf(); // télécharge
+      // ouvrir l'aperçu puis forcer le téléchargement
+      await previewPdf();
+      downloadPdf();
       setSubmitted(true);
     } catch (e) {
-      console.error("Erreur lors de l'envoi:", e);
-      alert("Erreur lors de l'envoi du devis (voir console).");
+      const detail =
+        e?.response?.data?.detail ||
+        (typeof e?.response?.data === "object" ? JSON.stringify(e.response.data) : null) ||
+        e.message;
+      alert(`Erreur lors de l'envoi du devis : ${detail}`);
     }
   };
 

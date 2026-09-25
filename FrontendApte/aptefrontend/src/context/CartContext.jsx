@@ -1,260 +1,161 @@
-import React, { createContext, useState, useEffect } from 'react';
-import cartService from '../services/cartService';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import cartService from "../services/cartService";
+import { cartTotal } from "../utils/currency";
+import { useAuth } from "./AuthContext";
 
-export const CartContext = createContext();
+export const CartContext = createContext(null);
+
+/**
+ * Panier de l'application.
+ *
+ * Le backend gère aussi bien le panier anonyme (via la session) que celui d'un
+ * compte : il est donc la seule source de vérité dans les deux cas. L'ancienne
+ * version tenait un panier localStorage en parallèle, ce qui produisait des
+ * totaux divergents entre le panier affiché et la commande enregistrée.
+ * localStorage ne sert plus que de repli hors ligne, en lecture seule.
+ */
+
+const OFFLINE_CACHE_KEY = "cart";
+
+function readOfflineCache() {
+  try {
+    const cached = localStorage.getItem(OFFLINE_CACHE_KEY);
+    return cached ? JSON.parse(cached) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeOfflineCache(items) {
+  try {
+    localStorage.setItem(OFFLINE_CACHE_KEY, JSON.stringify(items));
+  } catch {
+    // Quota dépassé ou stockage désactivé : le panier serveur reste la référence.
+  }
+}
+
+function normalizeItems(cart) {
+  return (cart?.items ?? []).map((item) => ({
+    id: item.id,
+    product: item.product,
+    quantity: item.quantity,
+    subtotal: item.subtotal,
+  }));
+}
 
 export function CartProvider({ children }) {
+  const { isAuthenticated, loading: authLoading } = useAuth();
   const [cartItems, setCartItems] = useState([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const wasAuthenticated = useRef(false);
 
-  // Vérifier l'authentification au montage
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    const isAuth = !!token;
-    setIsAuthenticated(isAuth);
-    
-    if (isAuth) {
-      // Utilisateur connecté : charger du backend
-      loadCartFromBackend();
-    } else {
-      // Utilisateur non connecté : charger du localStorage
-      loadCartFromLocalStorage();
-    }
+  const applyCart = useCallback((cart) => {
+    const items = normalizeItems(cart);
+    setCartItems(items);
+    writeOfflineCache(items);
+    return items;
   }, []);
 
-  // Charger du backend (utilisateurs connectés)
-  const loadCartFromBackend = async () => {
+  const loadCart = useCallback(async () => {
     try {
-      const response = await cartService.getCart();
-      const items = response.data.items.map(item => ({
-        product: item.product,
-        quantity: item.quantity,
-        id: item.id
-      }));
-      setCartItems(items);
-      console.log('Panier chargé du backend:', items);
-    } catch (error) {
-      console.error('Erreur chargement panier backend:', error);
-      // Fallback sur localStorage
-      loadCartFromLocalStorage();
+      const { data } = await cartService.getCart();
+      applyCart(data);
+      setError(null);
+    } catch {
+      // Serveur injoignable : on affiche le dernier panier connu plutôt qu'un
+      // panier vide, qui laisserait croire à une perte de données.
+      setCartItems(readOfflineCache());
+      setError("Panier indisponible pour le moment.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [applyCart]);
 
-  // Charger du localStorage (utilisateurs non connectés)
-  const loadCartFromLocalStorage = () => {
-    try {
-      const saved = localStorage.getItem('cart');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setCartItems(parsed);
-        console.log('Panier chargé du localStorage:', parsed);
-      }
-    } catch (error) {
-      console.error('Erreur chargement localStorage:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Sauvegarder dans localStorage pour utilisateurs non connectés
+  // La fusion du panier anonyme n'a lieu qu'à la transition vers l'état connecté.
   useEffect(() => {
-    if (!isAuthenticated && cartItems.length >= 0) {
-      localStorage.setItem('cart', JSON.stringify(cartItems));
-      console.log('Panier sauvegardé localStorage:', cartItems);
-    }
-  }, [cartItems, isAuthenticated]);
+    if (authLoading) return;
 
-  const addToCart = async (product, quantity = 1) => {
-    try {
-      if (isAuthenticated) {
-        // Envoyer au backend
-        const response = await cartService.addToCart(product.id, quantity);
-        const items = response.data.items.map(item => ({
-          product: item.product,
-          quantity: item.quantity,
-          id: item.id
-        }));
-        setCartItems(items);
-        console.log('Produit ajouté au backend:', product.name);
-      } else {
-        // Ajouter au localStorage
-        setCartItems(prev => {
-          const exists = prev.find(item => item.product.id === product.id);
-          let updated;
-          
-          if (exists) {
-            updated = prev.map(item =>
-              item.product.id === product.id
-                ? { ...item, quantity: item.quantity + quantity }
-                : item
-            );
-          } else {
-            updated = [...prev, { product, quantity }];
-          }
-          
-          console.log('Produit ajouté au localStorage:', product.name);
-          return updated;
-        });
-      }
-    } catch (error) {
-      console.error('Erreur ajout panier:', error);
-    }
-  };
+    const justLoggedIn = isAuthenticated && !wasAuthenticated.current;
+    wasAuthenticated.current = isAuthenticated;
 
-  const removeFromCart = async (productId) => {
-    try {
-      if (isAuthenticated) {
-        // Supprimer du backend
-        const item = cartItems.find(i => i.product.id === productId);
-        if (item?.id) {
-          const response = await cartService.removeFromCart(item.id);
-          const items = response.data.items.map(item => ({
-            product: item.product,
-            quantity: item.quantity,
-            id: item.id
-          }));
-          setCartItems(items);
-          console.log('Produit supprimé du backend');
-        }
-      } else {
-        // Supprimer du localStorage
-        setCartItems(prev => prev.filter(item => item.product.id !== productId));
-        console.log('Produit supprimé du localStorage');
-      }
-    } catch (error) {
-      console.error('Erreur suppression panier:', error);
-    }
-  };
-
-  const updateQuantity = async (productId, quantity) => {
-    if (quantity <= 0) {
-      removeFromCart(productId);
+    if (justLoggedIn) {
+      cartService
+        .mergeCart()
+        .then(({ data }) => applyCart(data))
+        .catch(() => loadCart())
+        .finally(() => setLoading(false));
       return;
     }
 
-    try {
-      if (isAuthenticated) {
-        // Mettre à jour au backend
-        const item = cartItems.find(i => i.product.id === productId);
-        if (item?.id) {
-          const response = await cartService.updateCartItem(item.id, quantity);
-          const items = response.data.items.map(item => ({
-            product: item.product,
-            quantity: item.quantity,
-            id: item.id
-          }));
-          setCartItems(items);
-        }
-      } else {
-        // Mettre à jour dans localStorage
-        setCartItems(prev =>
-          prev.map(item =>
-            item.product.id === productId
-              ? { ...item, quantity }
-              : item
-          )
-        );
+    loadCart();
+  }, [authLoading, isAuthenticated, applyCart, loadCart]);
+
+  const withCart = useCallback(
+    async (operation) => {
+      try {
+        const { data } = await operation();
+        setError(null);
+        return applyCart(data);
+      } catch (err) {
+        setError(err?.response?.data?.detail || "Action impossible sur le panier.");
+        throw err;
       }
-    } catch (error) {
-      console.error('Erreur mise à jour quantité:', error);
-    }
-  };
+    },
+    [applyCart],
+  );
 
-  const clearCart = async () => {
-    try {
-      if (isAuthenticated) {
-        await cartService.clearCart();
-      }
-      setCartItems([]);
-      localStorage.removeItem('cart');
-      console.log('Panier vidé');
-    } catch (error) {
-      console.error('Erreur vidage panier:', error);
-    }
-  };
+  const addToCart = useCallback(
+    (product, quantity = 1) => withCart(() => cartService.addToCart(product.id, quantity)),
+    [withCart],
+  );
 
-  // Synchroniser quand l'utilisateur se connecte
-  const syncCartOnLogin = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      if (!token) return;
+  const updateQuantity = useCallback(
+    (productId, quantity) =>
+      quantity <= 0
+        ? withCart(() => cartService.removeFromCart(productId))
+        : withCart(() => cartService.updateCartItem(productId, quantity)),
+    [withCart],
+  );
 
-      setIsAuthenticated(true);
-      
-      // Récupérer le panier du backend
-      const response = await cartService.getCart();
-      const backendItems = response.data.items.map(item => ({
-        product: item.product,
-        quantity: item.quantity,
-        id: item.id
-      }));
+  const removeFromCart = useCallback(
+    (productId) => withCart(() => cartService.removeFromCart(productId)),
+    [withCart],
+  );
 
-      // Récupérer le panier local
-      const localCart = JSON.parse(localStorage.getItem('cart') || '[]');
+  const clearCart = useCallback(() => withCart(() => cartService.clearCart()), [withCart]);
 
-      // Fusionner les deux
-      let merged = [...backendItems];
-      for (const localItem of localCart) {
-        const exists = merged.find(b => b.product.id === localItem.product.id);
-        if (exists) {
-          exists.quantity += localItem.quantity;
-        } else {
-          merged.push(localItem);
-        }
-      }
-
-      // Envoyer les modifications au backend
-      for (const item of merged) {
-        if (!item.id) {
-          await cartService.addToCart(item.product.id, item.quantity);
-        }
-      }
-
-      // Recharger le panier du backend
-      const finalResponse = await cartService.getCart();
-      const finalItems = finalResponse.data.items.map(item => ({
-        product: item.product,
-        quantity: item.quantity,
-        id: item.id
-      }));
-      setCartItems(finalItems);
-      
-      // Effacer localStorage
-      localStorage.removeItem('cart');
-      console.log('Panier synchronisé à la connexion');
-    } catch (error) {
-      console.error('Erreur synchronisation panier:', error);
-    }
-  };
-
-  const syncCartOnLogout = () => {
-    setIsAuthenticated(false);
-    // Garder les articles pour localStorage
-    localStorage.setItem('cart', JSON.stringify(cartItems));
-    console.log('Panier transféré à localStorage');
-  };
-
-  const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
-
-  return (
-    <CartContext.Provider value={{
+  const value = useMemo(
+    () => ({
       cartItems,
-      setCartItems,
+      loading,
+      error,
       addToCart,
       removeFromCart,
       updateQuantity,
       clearCart,
-      cartCount,
-      isAuthenticated,
-      setIsAuthenticated,
-      syncCartOnLogin,
-      syncCartOnLogout,
-      loading,
-    }}>
-      {children}
-    </CartContext.Provider>
+      reloadCart: loadCart,
+      cartCount: cartItems.reduce((count, item) => count + item.quantity, 0),
+      cartTotal: cartTotal(cartItems),
+    }),
+    [cartItems, loading, error, addToCart, removeFromCart, updateQuantity, clearCart, loadCart],
   );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
+
+export const useCart = () => {
+  const context = useContext(CartContext);
+  if (context === null) {
+    throw new Error("useCart doit être utilisé à l'intérieur de <CartProvider>.");
+  }
+  return context;
+};

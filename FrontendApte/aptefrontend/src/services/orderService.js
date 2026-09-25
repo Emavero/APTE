@@ -1,76 +1,37 @@
 import apiClient from "./apiClient";
 
 const orderService = {
-  // Récupérer toutes les commandes
-  getOrders: (params = {}) =>
-    apiClient.get("orders/", {
-      params,
-      headers: { "Content-Type": "application/json" },
-    }),
+  getOrders: (params = {}) => apiClient.get("orders/", { params }),
 
-  // Récupérer les commandes avec pagination
   getOrdersWithPagination: (page = 1, pageSize = 10) =>
-    apiClient.get("orders/", {
-      params: { page, page_size: pageSize },
-      headers: { "Content-Type": "application/json" },
-    }),
+    apiClient.get("orders/", { params: { page, page_size: pageSize } }),
 
-  // Récupérer les détails d'une commande
-  getOrderDetail: (orderId) =>
-    apiClient.get(`orders/${orderId}/`, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  getOrderDetail: (orderId) => apiClient.get(`orders/${orderId}/`),
 
-  // Créer une commande (avec paiement)
-  createOrder: (data) =>
-    apiClient.post("orders/", data, {
-      headers: { "Content-Type": "application/json" },
-    }),
-  
-  // Mettre à jour une commande complète
-  updateOrder: (orderId, data) =>
-    apiClient.put(`orders/${orderId}/`, data, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  /** Crée la commande. Les montants sont calculés et facturés côté serveur. */
+  createOrder: (data) => apiClient.post("orders/", data),
 
-  // Mettre à jour uniquement le statut
-  updateOrderStatus: (orderId, status) =>
-    apiClient.patch(`orders/${orderId}/`, { status }, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  cancelOrder: (orderId) => apiClient.post(`orders/${orderId}/cancel/`),
 
-  // Annuler une commande
-  cancelOrder: (orderId) =>
-    apiClient.patch(`orders/${orderId}/`, { status: "canceled" }, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  /** Changement de statut : réservé au personnel. */
+  updateOrderStatus: (orderId, status, reason = "") =>
+    apiClient.post(`orders/${orderId}/status/`, { status, reason }),
 
-  // Supprimer une commande
-  deleteOrder: (orderId) =>
-    apiClient.delete(`orders/${orderId}/`, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  /** Réouvre une session de paiement (abandon, expiration, webhook perdu). */
+  restartPayment: (orderId) => apiClient.post(`orders/${orderId}/pay/`),
 
-  // 🆕 Vérifier le statut d'un paiement Wave
-  checkPaymentStatus: (orderId) =>
-    apiClient.get(`orders/${orderId}/check-payment/`, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  checkPaymentStatus: (orderId) => apiClient.get(`orders/${orderId}/check-payment/`),
 
-  // 🆕 Récupérer les commandes par statut
-  getOrdersByStatus: (status) =>
-    apiClient.get("orders/", {
-      params: { status },
-      headers: { "Content-Type": "application/json" },
-    }),
+  getInvoice: (orderId) => apiClient.get(`orders/${orderId}/invoice/`),
 
-  // 🆕 Récupérer les commandes par méthode de paiement
+  /** URL absolue de la facture imprimable (à ouvrir dans un onglet). */
+  getInvoicePrintUrl: (orderId) =>
+    new URL(`orders/${orderId}/invoice/print/`, apiClient.defaults.baseURL).toString(),
+
+  getOrdersByStatus: (status) => apiClient.get("orders/", { params: { status } }),
+
   getOrdersByPaymentMethod: (paymentMethod) =>
-    apiClient.get("orders/", {
-      params: { payment_method: paymentMethod },
-      headers: { "Content-Type": "application/json" },
-    }),
-
+    apiClient.get("orders/", { params: { payment_method: paymentMethod } }),
 };
 
 export default orderService;

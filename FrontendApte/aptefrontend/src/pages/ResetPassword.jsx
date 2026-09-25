@@ -1,6 +1,8 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import authService from "../services/authService";
+// Importée pour que Vite l'intègre au bundle.
+import background from "../assets/bglogregi.jpg";
 import {
   FaLock,
   FaRegEye,
@@ -10,8 +12,21 @@ import {
   FaEnvelope
 } from "react-icons/fa";
 
+/**
+ * Réinitialisation du mot de passe, en deux temps.
+ *
+ * Sans jeton dans l'URL, le formulaire demande simplement l'envoi d'un lien par
+ * e-mail. Avec un jeton (/reset-password/:token), il applique le nouveau mot de
+ * passe. L'ancienne version envoyait « e-mail + nouveau mot de passe » et le
+ * serveur l'appliquait sans preuve de possession de la boîte : n'importe qui
+ * pouvait prendre le contrôle d'un compte en connaissant son adresse.
+ */
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const { token } = useParams();
+  // Un jeton dans l'URL fait passer le formulaire en mode « choix du mot de passe ».
+  const hasToken = Boolean(token);
+
   const [form, setForm] = useState({
     email: "",
     newPassword: "",
@@ -21,6 +36,7 @@ const ResetPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   const [loading, setLoading] = useState(false);
 
   // Validation du mot de passe
@@ -50,44 +66,49 @@ const ResetPassword = () => {
     e.preventDefault();
     setError("");
 
-    // Vérifications
-    if (form.newPassword !== form.confirmPassword) {
-      setError("Les mots de passe ne correspondent pas");
-      return;
-    }
-
-    if (!passwordValidation.isValid) {
-      setError("Le mot de passe ne respecte pas les critères de sécurité");
-      return;
+    if (hasToken) {
+      if (form.newPassword !== form.confirmPassword) {
+        setError("Les mots de passe ne correspondent pas");
+        return;
+      }
+      if (!passwordValidation.isValid) {
+        setError("Le mot de passe ne respecte pas les critères de sécurité");
+        return;
+      }
     }
 
     try {
       setLoading(true);
-      
-      await authService.resetPassword({
-        email: form.email,
-        new_password: form.newPassword
-      });
-      
+
+      const { data } = hasToken
+        ? await authService.confirmPasswordReset({ token, newPassword: form.newPassword })
+        : await authService.requestPasswordReset(form.email);
+
+      setSuccessMessage(data?.detail || "");
       setSuccess(true);
-      
-      setTimeout(() => {
-        navigate("/login");
-      }, 3000);
+
+      // On ne redirige que si le mot de passe a bel et bien été changé : après
+      // un simple envoi d'e-mail, l'utilisateur doit lire son message.
+      if (hasToken) {
+        setTimeout(() => navigate("/login"), 3000);
+      }
     } catch (err) {
-      if (err.response && err.response.data) {
-        const messages = Object.entries(err.response.data)
-          .map(([key, value]) => `${key}: ${value}`)
-          .join(" | ");
-        setError(messages);
+      const data = err?.response?.data;
+      const fields = data?.errors && typeof data.errors === "object" ? data.errors : null;
+      if (fields) {
+        setError(
+          Object.entries(fields)
+            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(", ") : value}`)
+            .join(" | "),
+        );
       } else {
-        setError("Erreur lors de la réinitialisation du mot de passe");
+        setError(data?.detail || "Erreur lors de la réinitialisation du mot de passe");
       }
     } finally {
       setLoading(false);
     }
   };
-  
+
   const handleCancel = () => {
     navigate("/login");
   };
@@ -96,7 +117,7 @@ const ResetPassword = () => {
     <div
       className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat relative"
       style={{
-        backgroundImage: "url('/src/assets/bglogregi.jpg')",
+        backgroundImage: `url(${background})`,
       }}
     >
       {/* Overlay sombre */}
@@ -111,12 +132,23 @@ const ResetPassword = () => {
               <FaCheckCircle className="text-green-400 text-4xl" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">
-              Mot de passe réinitialisé !
+              {hasToken ? "Mot de passe réinitialisé !" : "Vérifiez votre boîte mail"}
             </h2>
             <p className="text-gray-300">
-              Votre mot de passe a été modifié avec succès.
-              Vous pouvez maintenant vous connecter.
+              {successMessage ||
+                (hasToken
+                  ? "Votre mot de passe a été modifié avec succès. Vous pouvez maintenant vous connecter."
+                  : "Si un compte existe pour cette adresse, un lien de réinitialisation vient de vous être envoyé.")}
             </p>
+            {!hasToken && (
+              <button
+                type="button"
+                onClick={handleCancel}
+                className="mt-4 text-sm text-gray-300 hover:text-white transition-colors"
+              >
+                Retour à la connexion
+              </button>
+            )}
           </div>
         ) : (
           // Formulaire de réinitialisation
@@ -132,7 +164,9 @@ const ResetPassword = () => {
               Réinitialiser le mot de passe
             </h1>
             <p className="text-xs md:text-sm text-gray-300 text-center">
-              Entrez votre email et choisissez un nouveau mot de passe
+              {hasToken
+                ? "Choisissez votre nouveau mot de passe"
+                : "Entrez votre email pour recevoir un lien de réinitialisation"}
             </p>
 
             {error && (
@@ -142,21 +176,25 @@ const ResetPassword = () => {
             )}
 
             <div className="w-full flex flex-col gap-3 mt-3">
-              {/* Email */}
-              <div className="flex items-center gap-2 bg-white/20 p-2 rounded-xl focus-within:ring-2 focus-within:ring-blue-500">
-                <FaEnvelope className="text-gray-300" />
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleChange}
-                  placeholder="Votre adresse email"
-                  required
-                  className="bg-transparent border-0 w-full outline-none text-sm md:text-base text-white placeholder-gray-300"
-                />
-              </div>
+              {/* Email (étape 1 uniquement) */}
+              {!hasToken && (
+                <div className="flex items-center gap-2 bg-white/20 p-2 rounded-xl focus-within:ring-2 focus-within:ring-blue-500">
+                  <FaEnvelope className="text-gray-300" />
+                  <input
+                    type="email"
+                    name="email"
+                    value={form.email}
+                    onChange={handleChange}
+                    placeholder="Votre adresse email"
+                    required
+                    className="bg-transparent border-0 w-full outline-none text-sm md:text-base text-white placeholder-gray-300"
+                  />
+                </div>
+              )}
 
-              {/* Nouveau mot de passe */}
+              {/* Nouveau mot de passe (étape 2 uniquement) */}
+              {hasToken && (
+                <>
               <div className="relative flex items-center gap-2 bg-white/20 p-2 rounded-xl focus-within:ring-2 focus-within:ring-blue-500">
                 <FaLock className="text-gray-300" />
                 <input
@@ -234,14 +272,23 @@ const ResetPassword = () => {
                   />
                 )}
               </div>
+                </>
+              )}
             </div>
 
             <button
               type="submit"
-              disabled={loading || !passwordValidation.isValid || !form.email}
+              disabled={
+                loading ||
+                (hasToken ? !passwordValidation.isValid : !form.email)
+              }
               className="w-full p-2 bg-blue-500 rounded-xl mt-4 hover:bg-blue-600 transition-all duration-200 text-sm md:text-base disabled:opacity-60 disabled:cursor-not-allowed font-medium"
             >
-              {loading ? "Réinitialisation..." : "Réinitialiser le mot de passe"}
+              {loading
+                ? "Envoi en cours..."
+                : hasToken
+                  ? "Réinitialiser le mot de passe"
+                  : "Recevoir le lien de réinitialisation"}
             </button>
 
             <button
