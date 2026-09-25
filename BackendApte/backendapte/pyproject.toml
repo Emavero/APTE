@@ -1,0 +1,40 @@
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+extend-exclude = ["*/migrations/*"]
+
+[tool.ruff.lint]
+select = [
+    "F",    # pyflakes
+    "E",    # pycodestyle
+    "W",
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # bugbear
+    "C4",   # comprehensions
+    "DJ",   # règles Django
+    "S",    # bandit (sécurité)
+    "RET",
+    "SIM",
+]
+ignore = [
+    "S101",  # assert : légitime dans les tests
+    "B008",  # appels dans les valeurs par défaut (idiome DRF)
+    "RET504",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*/tests/*" = ["S105", "S106", "B017", "PT011"]
+"conftest.py" = ["S105", "S106"]
+"backendapte/settings/*" = ["F403", "F405"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["apps", "backendapte"]
+
+[tool.coverage.run]
+source = ["apps"]
+omit = ["*/migrations/*", "*/tests/*", "*/__init__.py"]
+
+[tool.coverage.report]
+skip_empty = true
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:", "raise NotImplementedError"]

@@ -1,16 +1,9 @@
-"""
-ASGI config for backendapte project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
-"""
+"""Point d'entrée ASGI."""
 
 import os
 
 from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backendapte.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backendapte.settings.prod")
 
 application = get_asgi_application()
