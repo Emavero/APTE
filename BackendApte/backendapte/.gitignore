@@ -1,8 +1,14 @@
-# --- Fichiers d'environnement ---
-*.env
-
-# --- Fichiers et dossiers générés ---
-backendapte/media/products/*
-!backendapte/media/products/.gitkeep
-
-backendapte/order.log
+__pycache__/
+*.py[cod]
+*.sqlite3
+staticfiles/
+media/products/*
+!media/products/.gitkeep
+*.log
+.env
+.env.*
+!.env.example
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/

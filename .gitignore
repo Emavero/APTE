@@ -1,0 +1,39 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# --- Django ---
+*.sqlite3
+*.sqlite3-journal
+staticfiles/
+media/products/*
+!media/products/.gitkeep
+*.log
+
+# --- Node ---
+node_modules/
+dist/
+dist-ssr/
+.vite/
+npm-debug.log*
+yarn-error.log*
+
+# --- Environnement ---
+.env
+.env.*
+!.env.example
+
+# --- Outils / OS ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
