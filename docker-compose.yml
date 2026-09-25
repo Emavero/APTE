@@ -1,55 +1,162 @@
-version: '3.8'
+# ============================================================================
+# Pile de développement / test local APTE.
+#
+#   docker compose up --build            démarre base + backend + frontend
+#   docker compose run --rm tests        exécute la suite de tests du backend
+#   docker compose run --rm lint         exécute ruff
+#   docker compose --profile prod up     vérifie les images de production
+#
+# Les valeurs ci-dessous ne servent qu'en local : elles sont volontairement
+# lisibles et sans secret réel. La production lit les mêmes variables depuis
+# l'environnement de l'orchestrateur.
+# ============================================================================
+
+name: apte
+
+x-backend-env: &backend-env
+  DJANGO_SETTINGS_MODULE: backendapte.settings.dev
+  DJANGO_SECRET_KEY: cle-de-developpement-non-secrete
+  DJANGO_DEBUG: "True"
+  DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend,0.0.0.0
+  POSTGRES_DB: apte
+  POSTGRES_USER: apte
+  POSTGRES_PASSWORD: apte
+  POSTGRES_HOST: db
+  POSTGRES_PORT: "5432"
+  CORS_ALLOWED_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+  CSRF_TRUSTED_ORIGINS: http://localhost:5173
+  BACKEND_URL: http://localhost:8000
+  FRONTEND_URL: http://localhost:5173
+  BILLING_TAX_RATE: "0.18"
+  # Pas de secret Wave en local : les webhooks sont donc refusés, ce qui est le
+  # comportement attendu (un webhook non signé ne doit jamais être accepté).
+  WAVE_REQUIRE_SIGNED_WEBHOOK: "True"
+  EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
 
 services:
-  backend:
-    build:
-      context: ./BackendApte/backendapte
-      dockerfile: Dockerfile
-    
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./BackendApte/backendapte:/app
-    env_file:
-      - ./BackendApte/backendapte/.env
-    depends_on:
-      - db
-    environment:
-      - DEBUG=True
-
-  frontend:
-    build:
-      context: ./FrontendApte/aptefrontend
-      dockerfile: Dockerfile
-   
-    ports:
-      - "5173:5173"
-    volumes:
-      - ./FrontendApte/aptefrontend:/app
-      - /app/node_modules
-    environment:
-      - CHOKIDAR_USEPOLLING=true
-      - VITE_API_URL=http://localhost:8000
-    depends_on:
-      - backend
-    stdin_open: true
-    tty: true
-
+  # ------------------------------------------------------------------ Base
   db:
-    image: postgres:15
+    image: postgres:16-alpine
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: mydb
+      POSTGRES_DB: apte
+      POSTGRES_USER: apte
+      POSTGRES_PASSWORD: apte
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U apte -d apte"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  # --------------------------------------------------------------- Backend
+  backend:
+    build:
+      context: ./BackendApte/backendapte
+      target: dev
+    environment:
+      <<: *backend-env
+      DJANGO_LOAD_SEED: "1"
+    ports:
+      - "8000:8000"
+    volumes:
+      # Code monté pour le rechargement à chaud ; les dépendances restent
+      # celles de l'image.
+      - ./BackendApte/backendapte:/app
+      - backend-media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health/"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 30s
+    restart: unless-stopped
+
+  # -------------------------------------------------------------- Frontend
+  frontend:
+    build:
+      context: ./FrontendApte/aptefrontend
+      target: dev
+    environment:
+      VITE_API_URL: http://localhost:8000
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./FrontendApte/aptefrontend:/app
+      # Volume anonyme : garde les node_modules de l'image, que le montage du
+      # code masquerait sinon.
+      - /app/node_modules
+    depends_on:
+      backend:
+        condition: service_started
+    restart: unless-stopped
+
+  # ------------------------------------------------- Tests (à la demande)
+  tests:
+    build:
+      context: ./BackendApte/backendapte
+      target: dev
+    environment:
+      <<: *backend-env
+      DJANGO_SETTINGS_MODULE: backendapte.settings.test
+      DJANGO_MIGRATE_ON_START: "0"
+    volumes:
+      - ./BackendApte/backendapte:/app
+    entrypoint: []
+    command: ["python", "-m", "pytest", "-q", "--cov=apps", "--cov-report=term-missing"]
+    profiles: ["tools"]
+
+  lint:
+    build:
+      context: ./BackendApte/backendapte
+      target: dev
+    volumes:
+      - ./BackendApte/backendapte:/app
+    entrypoint: []
+    command: ["sh", "-c", "ruff check . && ruff format --check ."]
+    profiles: ["tools"]
+
+  # ------------------------------ Images de production (vérification locale)
+  backend-prod:
+    build:
+      context: ./BackendApte/backendapte
+      target: prod
+    environment:
+      <<: *backend-env
+      DJANGO_SETTINGS_MODULE: backendapte.settings.prod
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,backend-prod
+      DJANGO_COLLECTSTATIC_ON_START: "1"
+      # HTTPS est terminé par le frontal en production : sans cela, le conteneur
+      # renverrait une boucle de redirections derrière un proxy local en HTTP.
+      SECURE_SSL_REDIRECT: "False"
+    ports:
+      - "8001:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    profiles: ["prod"]
+
+  frontend-prod:
+    build:
+      context: ./FrontendApte/aptefrontend
+      target: prod
+      args:
+        VITE_API_URL: http://localhost:8001
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend-prod
+    profiles: ["prod"]
 
 volumes:
   pgdata:
+  backend-media:

@@ -1,0 +1,52 @@
+name: Frontend
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "FrontendApte/**"
+      - ".github/workflows/frontend.yml"
+  pull_request:
+    paths:
+      - "FrontendApte/**"
+      - ".github/workflows/frontend.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: FrontendApte/aptefrontend
+
+jobs:
+  build:
+    name: Lint et build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: FrontendApte/aptefrontend/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Build de production
+        env:
+          VITE_API_URL: http://localhost:8000
+        run: npm run build
+
+      - name: Publier le bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: FrontendApte/aptefrontend/dist
+          retention-days: 7

@@ -1,0 +1,69 @@
+name: Sécurité
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+  schedule:
+    # Les avis de sécurité paraissent après la fusion du code : un passage
+    # hebdomadaire les détecte sans attendre la prochaine modification.
+    - cron: "17 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    name: Dépendances Python
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: BackendApte/backendapte
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer pip-audit
+        run: pip install pip-audit==2.9.0
+
+      - name: Auditer les dépendances
+        run: pip-audit --requirement requirements.txt --strict --progress-spinner off
+
+  node:
+    name: Dépendances Node
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: FrontendApte/aptefrontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: FrontendApte/aptefrontend/package-lock.json
+
+      - name: Installer les dépendances
+        run: npm ci
+
+      - name: Auditer les dépendances
+        run: npm audit --audit-level=high
+
+  secrets:
+    name: Recherche de secrets
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: gitleaks
+        # Image officielle plutôt que l'action : pas de jeton de licence requis.
+        run: |
+          docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest \
+            detect --source=/repo --redact --verbose --no-banner
