@@ -1,12 +1,16 @@
-import { useState, useContext } from "react";
-import { AuthContext } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { MdAlternateEmail } from "react-icons/md";
 import { FaFingerprint, FaRegEye, FaRegEyeSlash } from "react-icons/fa";
+import { useAuth } from "../context/AuthContext";
+// L'image doit être importée pour que Vite l'inclue dans le bundle : le chemin
+// littéral "src/assets/..." ne résout pas dans la version construite.
+import background from "../assets/bglogregi.jpg";
 
 const Login = () => {
-  const { login } = useContext(AuthContext);
+  const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [form, setForm] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
@@ -25,13 +29,17 @@ const Login = () => {
 
     try {
       await login(form);
-      navigate("/"); // redirection après connexion
+      // Retour à la page initialement demandée, sinon l'accueil.
+      navigate(location.state?.from?.pathname || "/", { replace: true });
     } catch (err) {
-      if (err.response && err.response.data) {
-        setError(err.response.data.error);
-      } else {
-        setError("Erreur lors de la connexion");
-      }
+      const data = err?.response?.data;
+      setError(
+        data?.detail ||
+          data?.error ||
+          (err?.response?.status === 401
+            ? "E-mail ou mot de passe incorrect."
+            : "Erreur lors de la connexion."),
+      );
     } finally {
       setLoading(false);
     }
@@ -41,7 +49,7 @@ const Login = () => {
     <div
       className="min-h-screen w-full flex items-center justify-center bg-cover bg-center bg-no-repeat relative"
       style={{
-        backgroundImage: "url('src/assets/bglogregi.jpg')", 
+        backgroundImage: `url(${background})`,
       }}
     >
       {/* Overlay sombre pour lisibilité */}
@@ -119,14 +127,14 @@ const Login = () => {
         </button>
         <p className="text-xs md:text-sm text-gray-300 text-center">
           Pas encore de compte ?{" "}
-          <a href="/register" className="text-blue-400 hover:underline">
+          <Link to="/register" className="text-blue-400 hover:underline">
             Inscrivez-vous
-          </a>
+          </Link>
         </p>
         <p className="text-xs md:text-sm text-gray-300 text-center">
-          <a href="/reset-password" className="text-blue-400 hover:underline">
+          <Link to="/reset-password" className="text-blue-400 hover:underline">
             Mot de passe oublié ?
-          </a>
+          </Link>
         </p>
       </form>
     </div>

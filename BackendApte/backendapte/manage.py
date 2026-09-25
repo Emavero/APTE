@@ -1,26 +1,23 @@
 #!/usr/bin/env python
-"""Django's command-line utility for administrative tasks."""
+"""Utilitaire en ligne de commande Django."""
+
 import os
 import sys
-from typing import TYPE_CHECKING
 
-if TYPE_CHECKING:
-    # Help static analyzers resolve imports without importing Django at runtime.
-    from django.core.management import execute_from_command_line # type: ignore
 
-def main():
-    """Run administrative tasks."""
-    os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backendapte.settings.dev')
+def main() -> None:
+    # DJANGO_SETTINGS_MODULE défini dans l'environnement a la priorité
+    # (backendapte.settings.prod en production, .test pour la suite de tests).
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backendapte.settings.dev")
     try:
-        from django.core.management import execute_from_command_line # type: ignore
-    except ImportError as exc:
+        from django.core.management import execute_from_command_line
+    except ImportError as exc:  # pragma: no cover - environnement incomplet
         raise ImportError(
-            "Couldn't import Django. Are you sure it's installed and "
-            "available on your PYTHONPATH environment variable? Did you "
-            "forget to activate a virtual environment?"
+            "Django est introuvable. Vérifiez que l'environnement virtuel est activé "
+            "et que les dépendances sont installées (pip install -r requirements.txt)."
         ) from exc
     execute_from_command_line(sys.argv)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

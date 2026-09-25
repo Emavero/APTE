@@ -8,7 +8,8 @@ import {
   FaSignInAlt,
   FaSignOutAlt,
 } from "react-icons/fa";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../../../context/AuthContext";
 
 const Menu = [
   { id: 1, name: "Accueil", link: "/" },
@@ -25,35 +26,37 @@ const DropdownLinks = [
 
 const Navbar = ({ handleOrderPopup, cartItems = [] }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('token'));
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const navigate = useNavigate();
 
+  // L'état de connexion vient du contexte : le lire dans localStorage au
+  // montage laissait la barre désynchronisée après une connexion ou une
+  // expiration de session.
+  const { isAuthenticated: isLoggedIn, logout } = useAuth();
+
   const cartCount = cartItems.reduce((total, item) => total + item.quantity, 0);
 
-  const handleAuthAction = () => {
+  const handleAuthAction = async () => {
     if (isLoggedIn) {
-      setIsLoggedIn(false);
-      localStorage.removeItem('token');
-      navigate("/login");
-    } else {
-      navigate("/login");
+      // La déconnexion révoque aussi le jeton côté serveur.
+      await logout();
     }
+    navigate("/login");
   };
 
   return (
     <div className="shadow-md bg-white dark:bg-gray-900 dark:text-white duration-200 relative z-50">
       <div className="bg-blue-600 py-2">
         <div className="container mx-auto px-4 flex justify-between items-center">
-          <a
-            href="/"
+          <Link
+            to="/"
             className="font-bold text-2xl sm:text-3xl flex gap-2 items-center text-white"
           >
             <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-blue-600 font-bold">
               A
             </div>
             Apte
-          </a>
+          </Link>
 
           <div className="flex items-center gap-4">
             <div className="relative group hidden sm:block">
@@ -115,12 +118,12 @@ const Navbar = ({ handleOrderPopup, cartItems = [] }) => {
         <ul className="flex items-center gap-4">
           {Menu.map((data) => (
             <li key={data.id}>
-              <a
-                href={data.link}
+              <Link
+                to={data.link}
                 className="inline-block px-4 hover:text-blue-600 transition-colors font-medium"
               >
                 {data.name}
-              </a>
+              </Link>
             </li>
           ))}
 
@@ -138,13 +141,13 @@ const Navbar = ({ handleOrderPopup, cartItems = [] }) => {
                 <ul>
                   {DropdownLinks.map((data) => (
                     <li key={data.id}>
-                      <a
-                        href={data.link}
+                      <Link
+                        to={data.link}
                         className="block w-full px-3 py-2 rounded-md hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors"
                         onClick={() => setIsDropdownOpen(false)}
                       >
                         {data.name}
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -160,13 +163,13 @@ const Navbar = ({ handleOrderPopup, cartItems = [] }) => {
           <ul className="flex flex-col items-start p-5 gap-3">
             {Menu.map((data) => (
               <li key={data.id} className="w-full">
-                <a
-                  href={data.link}
+                <Link
+                  to={data.link}
                   className="block w-full py-2 text-gray-700 dark:text-gray-200 hover:text-blue-600 font-medium"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   {data.name}
-                </a>
+                </Link>
               </li>
             ))}
 
@@ -178,13 +181,13 @@ const Navbar = ({ handleOrderPopup, cartItems = [] }) => {
                 <ul className="pl-4 mt-2 space-y-1">
                   {DropdownLinks.map((data) => (
                     <li key={data.id}>
-                      <a
-                        href={data.link}
+                      <Link
+                        to={data.link}
                         className="block py-1 text-gray-600 dark:text-gray-300 hover:text-blue-600"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
                         {data.name}
-                      </a>
+                      </Link>
                     </li>
                   ))}
                 </ul>

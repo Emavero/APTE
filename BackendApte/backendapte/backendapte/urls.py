@@ -1,46 +1,40 @@
-"""
-URL configuration for backendapte project.
+"""Routage racine du projet APTE.
 
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
+Toutes les ressources d'API sont préfixées par ``/api/`` : cela réserve la racine
+au service des fichiers statiques / média et évite toute collision avec les
+routes du frontend.
 """
-from django.contrib import admin
-from django.urls import path, include
+
 from django.conf import settings
 from django.conf.urls.static import static
+from django.contrib import admin
+from django.http import JsonResponse
+from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 
 
-urlpatterns = [
-    path('admin/', admin.site.urls),
+def healthcheck(_request):
+    """Sonde de disponibilité (docker-compose, orchestrateur, load balancer)."""
+    return JsonResponse({"status": "ok"})
+
+
+api_patterns = [
     path("users/", include("apps.users.urls")),
     path("products/", include("apps.products.urls")),
     path("orders/", include("apps.orders.urls")),
     path("quotes/", include("apps.quotes.urls")),
     path("cart/", include("apps.cart.urls")),
-
-    # OpenAPI schema + Swagger UI
-    path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
-    path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema")),
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
 ]
 
-# Servir les fichiers media en développement
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("health/", healthcheck, name="health"),
+    path("api/", include((api_patterns, "api"))),
+]
+
 if settings.DEBUG:
-    # Dossier media standard
+    # En production, les média et les statiques sont servis par WhiteNoise /
+    # le serveur frontal, jamais par Django.
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    
-    # Dossier products personnalisé
-    urlpatterns += static(settings.PRODUCTS_URL, document_root=settings.PRODUCTS_ROOT)
-    
-    # Dossier static
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

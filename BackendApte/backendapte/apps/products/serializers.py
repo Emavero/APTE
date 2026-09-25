@@ -1,35 +1,52 @@
+from __future__ import annotations
+
 from rest_framework import serializers
-from .models import Product, Category
+
+from .models import Category, Product
+
 
 class CategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ["id", "name", "slug"]
-        __name__ = "Category"
+
 
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     category_id = serializers.PrimaryKeyRelatedField(
         queryset=Category.objects.all(), source="category", write_only=True
     )
-   
     image_url = serializers.SerializerMethodField()
+    is_available = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = Product
         fields = [
-            "id", "name", "slug", "description", "price", "stock",
-            "image", "image_url", "is_active", "category", "category_id",
-            "created_at", "updated_at"
+            "id",
+            "name",
+            "slug",
+            "description",
+            "price",
+            "stock",
+            "image",
+            "image_url",
+            "is_active",
+            "is_available",
+            "category",
+            "category_id",
+            "created_at",
+            "updated_at",
         ]
-        __name__ = "Product"
+        read_only_fields = ["slug", "created_at", "updated_at"]
+        extra_kwargs = {"image": {"write_only": True, "required": False}}
 
-    def get_image_url(self, obj):
-        """Construire l'URL complète de l'image"""
-        request = self.context.get('request')
-        if obj.image:
-            if request:
-                return request.build_absolute_uri(obj.image.url)
-            else:
-                return f"http://127.0.0.1:8000{obj.image.url}"
-        return None
+    def get_image_url(self, obj: Product) -> str | None:
+        """URL absolue de l'image, construite depuis la requête courante.
+
+        Aucun domaine n'est codé en dur : l'API doit rester servable derrière
+        n'importe quel nom d'hôte.
+        """
+        if not obj.image:
+            return None
+        request = self.context.get("request")
+        return request.build_absolute_uri(obj.image.url) if request else obj.image.url

@@ -1,0 +1,147 @@
+{% load humanize %}<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Facture {{ invoice.number }}</title>
+  <style>
+    /* Palette reprise du frontend : primary #204D9C, secondary #000000. */
+    :root { --primary: #204D9C; --secondary: #000000; --muted: #6b7280; --line: #e5e7eb; }
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 32px; background: #f9fafb; color: var(--secondary);
+           font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .sheet { max-width: 800px; margin: 0 auto; background: #fff; padding: 40px;
+             border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+    header { display: flex; justify-content: space-between; align-items: flex-start;
+             gap: 24px; border-bottom: 3px solid var(--primary); padding-bottom: 20px; }
+    .brand { font-size: 28px; font-weight: 700; color: var(--primary); }
+    .brand small { display: block; font-size: 12px; font-weight: 400; color: var(--muted); line-height: 1.6; }
+    .doc-meta { text-align: right; font-size: 13px; color: var(--muted); }
+    .doc-meta .number { font-size: 18px; font-weight: 700; color: var(--secondary); }
+    .badge { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 999px;
+             font-size: 11px; font-weight: 700; text-transform: uppercase;
+             background: var(--primary); color: #fff; }
+    .badge.canceled { background: #b91c1c; }
+    .parties { display: flex; gap: 32px; margin: 28px 0; font-size: 13px; }
+    .parties section { flex: 1; }
+    .parties h2 { margin: 0 0 8px; font-size: 11px; letter-spacing: .08em;
+                  text-transform: uppercase; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th { background: var(--primary); color: #fff; text-align: left; padding: 10px 12px; font-size: 12px; }
+    tbody td { padding: 10px 12px; border-bottom: 1px solid var(--line); }
+    .num { text-align: right; white-space: nowrap; }
+    .totals { margin-top: 20px; margin-left: auto; width: 320px; font-size: 13px; }
+    .totals tr td { padding: 6px 0; }
+    .totals .grand td { border-top: 2px solid var(--primary); padding-top: 12px;
+                        font-size: 16px; font-weight: 700; color: var(--primary); }
+    footer { margin-top: 32px; border-top: 1px solid var(--line); padding-top: 16px;
+             font-size: 11px; color: var(--muted); line-height: 1.7; }
+    .actions { max-width: 800px; margin: 0 auto 16px; text-align: right; }
+    .actions button { background: var(--primary); color: #fff; border: 0; cursor: pointer;
+                      padding: 10px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; }
+    @media print { body { padding: 0; background: #fff; } .sheet { box-shadow: none; padding: 0; } .actions { display: none; } }
+  </style>
+</head>
+<body>
+  <div class="actions"><button type="button" onclick="window.print()">Imprimer / Enregistrer en PDF</button></div>
+
+  <article class="sheet">
+    <header>
+      <div class="brand">
+        {{ invoice.seller_snapshot.name|default:"APTE" }}
+        <small>
+          {{ invoice.seller_snapshot.legal_name }}<br>
+          {{ invoice.seller_snapshot.address }}<br>
+          {% if invoice.seller_snapshot.phone %}Tél. {{ invoice.seller_snapshot.phone }}<br>{% endif %}
+          {% if invoice.seller_snapshot.email %}{{ invoice.seller_snapshot.email }}<br>{% endif %}
+          {% if invoice.seller_snapshot.tax_id %}NINEA / IFU : {{ invoice.seller_snapshot.tax_id }}<br>{% endif %}
+          {% if invoice.seller_snapshot.trade_register %}RCCM : {{ invoice.seller_snapshot.trade_register }}{% endif %}
+        </small>
+      </div>
+      <div class="doc-meta">
+        <div class="number">FACTURE {{ invoice.number }}</div>
+        Émise le {{ invoice.issued_at|date:"d/m/Y" }}<br>
+        {% if invoice.due_at %}Échéance : {{ invoice.due_at|date:"d/m/Y" }}<br>{% endif %}
+        Commande n° {{ order.id }}<br>
+        <span class="badge {% if invoice.status == 'canceled' %}canceled{% endif %}">
+          {{ invoice.get_status_display }}
+        </span>
+      </div>
+    </header>
+
+    <div class="parties">
+      <section>
+        <h2>Facturé à</h2>
+        <strong>{{ invoice.customer_name }}</strong><br>
+        {% if invoice.billing_address %}{{ invoice.billing_address }}<br>{% endif %}
+        {% if invoice.billing_city %}{{ invoice.billing_city }}<br>{% endif %}
+        {% if invoice.customer_phone %}Tél. {{ invoice.customer_phone }}<br>{% endif %}
+        {% if invoice.customer_email %}{{ invoice.customer_email }}{% endif %}
+      </section>
+      <section>
+        <h2>Règlement</h2>
+        Mode : {{ order.get_payment_method_display }}<br>
+        Statut de la commande : {{ order.get_status_display }}<br>
+        {% if invoice.paid_at %}Réglée le {{ invoice.paid_at|date:"d/m/Y H:i" }}{% endif %}
+      </section>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Désignation</th>
+          <th class="num">P.U. TTC</th>
+          <th class="num">Qté</th>
+          <th class="num">Total TTC</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td>{{ item.product_name }}</td>
+          <td class="num">{{ item.unit_price|floatformat:0|intcomma }} {{ invoice.currency }}</td>
+          <td class="num">{{ item.quantity }}</td>
+          <td class="num">{{ item.line_total|floatformat:0|intcomma }} {{ invoice.currency }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <table class="totals">
+      <tr>
+        <td>Total HT</td>
+        <td class="num">{{ invoice.subtotal_excl_tax|floatformat:0|intcomma }} {{ invoice.currency }}</td>
+      </tr>
+      <tr>
+        <td>{{ invoice.seller_snapshot.tax_label|default:"TVA" }}
+          {% if invoice.tax_rate %}({{ invoice.tax_rate|floatformat:4 }}){% endif %}</td>
+        <td class="num">{{ invoice.tax_amount|floatformat:0|intcomma }} {{ invoice.currency }}</td>
+      </tr>
+      <tr>
+        <td>Livraison</td>
+        <td class="num">
+          {% if invoice.shipping_amount %}{{ invoice.shipping_amount|floatformat:0|intcomma }} {{ invoice.currency }}
+          {% else %}Offerte{% endif %}
+        </td>
+      </tr>
+      {% if invoice.discount_amount %}
+      <tr>
+        <td>Remise</td>
+        <td class="num">− {{ invoice.discount_amount|floatformat:0|intcomma }} {{ invoice.currency }}</td>
+      </tr>
+      {% endif %}
+      <tr class="grand">
+        <td>Total à payer</td>
+        <td class="num">{{ invoice.total_incl_tax|floatformat:0|intcomma }} {{ invoice.currency }}</td>
+      </tr>
+    </table>
+
+    <footer>
+      Livraison : {{ order.delivery_name }} — {{ order.delivery_address }}, {{ order.delivery_city }}
+      {% if order.delivery_phone %}(Tél. {{ order.delivery_phone }}){% endif %}<br>
+      {% if order.delivery_notes %}Instructions : {{ order.delivery_notes }}<br>{% endif %}
+      Montants exprimés en {{ invoice.currency }}. Facture générée électroniquement, valable sans signature.
+    </footer>
+  </article>
+</body>
+</html>

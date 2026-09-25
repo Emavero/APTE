@@ -1,35 +1,25 @@
 import apiClient from "./apiClient";
 
+/**
+ * Les lignes de panier sont adressées par produit et non par identifiant de
+ * ligne : le client connaît le produit qu'il manipule, et cela rend impossible
+ * de viser la ligne d'un autre panier.
+ */
 const cartService = {
-  // Récupérer le panier (authentifié ou anonyme)
-  getCart: () =>
-    apiClient.get("cart/", {
-      headers: { "Content-Type": "application/json" },
-    }),
+  getCart: () => apiClient.get("cart/"),
 
-  // Ajouter un produit au panier
   addToCart: (productId, quantity = 1) =>
-    apiClient.post("cart/add/", { product_id: productId, quantity }, {
-      headers: { "Content-Type": "application/json" },
-    }),
+    apiClient.post("cart/add/", { product_id: productId, quantity }),
 
-  // Supprimer un article du panier
-  removeFromCart: (itemId) =>
-    apiClient.delete(`cart/remove/${itemId}/`, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  updateCartItem: (productId, quantity) =>
+    apiClient.patch(`cart/items/${productId}/`, { quantity }),
 
-  // Mettre à jour la quantité
-  updateCartItem: (itemId, quantity) =>
-    apiClient.patch(`cart/update/${itemId}/`, { quantity }, {
-      headers: { "Content-Type": "application/json" },
-    }),
+  removeFromCart: (productId) => apiClient.delete(`cart/items/${productId}/`),
 
-  // Vider le panier
-  clearCart: () =>
-    apiClient.delete("cart/clear/", {
-      headers: { "Content-Type": "application/json" },
-    }),
+  clearCart: () => apiClient.delete("cart/clear/"),
+
+  /** Reprend le panier anonyme dans le compte, à appeler après connexion. */
+  mergeCart: () => apiClient.post("cart/merge/"),
 };
 
 export default cartService;

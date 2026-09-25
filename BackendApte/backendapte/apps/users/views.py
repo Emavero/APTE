@@ -1,98 +1,102 @@
-from rest_framework import generics, permissions, filters, status
+"""Contrôleurs HTTP de l'app utilisateurs : validation, délégation, réponse."""
+
+from __future__ import annotations
+
+from django.contrib.auth import get_user_model
+from drf_spectacular.utils import extend_schema
+from rest_framework import filters, generics, permissions, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.pagination import PageNumberPagination
-from django_filters.rest_framework import DjangoFilterBackend
-from .serializers import UserSerializer, RegisterSerializer, UserUpdateSerializer
-from .models import User
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-# Pagination
-class UserPagination(PageNumberPagination):
-    page_size = 10
-    page_size_query_param = 'page_size'
-    max_page_size = 100
+from apps.common.pagination import DefaultPagination
+
+from . import services
+from .serializers import (
+    LogoutSerializer,
+    PasswordResetSerializer,
+    ProfileUpdateSerializer,
+    RegisterSerializer,
+    UserSerializer,
+)
+
+User = get_user_model()
 
 
-# ==========================
-# Inscription
-# ==========================
+class ThrottledTokenObtainPairView(TokenObtainPairView):
+    """Connexion : limitée en débit pour freiner le bourrage d'identifiants."""
+
+    throttle_scope = "auth"
+
+
+class ThrottledTokenRefreshView(TokenRefreshView):
+    throttle_scope = "auth"
+
+
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
+    throttle_scope = "auth"
 
 
-# ==========================
-# Profil utilisateur connecté
-# ==========================
-class MeView(APIView):
-    permission_classes = [permissions.IsAuthenticated]
+class MeView(generics.RetrieveUpdateAPIView):
+    """Profil de l'utilisateur connecté (lecture et mise à jour)."""
 
-    def get(self, request):
-        serializer = UserSerializer(request.user)
-        return Response(serializer.data)
-
-
-# ==========================
-# Mise à jour profil / mot de passe (connecté)
-# ==========================
-class MeUpdateView(generics.UpdateAPIView):
-    serializer_class = UserUpdateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
         return self.request.user
 
+    def get_serializer_class(self):
+        return UserSerializer if self.request.method in permissions.SAFE_METHODS else ProfileUpdateSerializer
 
-# ==========================
-# Réinitialisation mot de passe (oubli)
-# ==========================
-class ResetPasswordView(APIView):
+
+class PasswordResetView(APIView):
+    """Demande (sans jeton) puis confirmation (avec jeton) du nouveau mot de passe."""
+
     permission_classes = [permissions.AllowAny]
+    throttle_scope = "password_reset"
+    serializer_class = PasswordResetSerializer
 
+    @extend_schema(request=PasswordResetSerializer, responses={200: None})
     def post(self, request):
-        email = request.data.get("email")
-        new_password = request.data.get("new_password")
-
-        if not email or not new_password:
-            return Response(
-                {"detail": "Email et nouveau mot de passe requis."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        try:
-            user = User.objects.get(email=email)
-            user.set_password(new_password)
-            user.save()
-            return Response({"detail": "Mot de passe réinitialisé avec succès."})
-        except User.DoesNotExist:
-            return Response(
-                {"detail": "Aucun utilisateur trouvé avec cet email."},
-                status=status.HTTP_404_NOT_FOUND
-            )
+        serializer = PasswordResetSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.save(), status=status.HTTP_200_OK)
 
 
-# ==========================
-# Liste des utilisateurs (admin)
-# ==========================
-class UserList(generics.ListAPIView):
+class LogoutView(APIView):
+    """Révoque le jeton de rafraîchissement fourni."""
+
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = LogoutSerializer
+
+    @extend_schema(request=LogoutSerializer, responses={200: None})
+    def post(self, request):
+        serializer = LogoutSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.save(), status=status.HTTP_200_OK)
+
+
+class UserListView(generics.ListAPIView):
+    """Annuaire des comptes, réservé au personnel."""
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAdminUser]
-    pagination_class = UserPagination
-
-    filter_backends = [filters.SearchFilter, DjangoFilterBackend, filters.OrderingFilter]
-    search_fields = ['email', 'phone', 'full_name', 'role']
-    filterset_fields = ['email', 'role', 'is_active', 'is_staff']
-    ordering_fields = ['email', 'full_name', 'role', 'date_joined']
-    ordering = ['email']
+    pagination_class = DefaultPagination
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ["email", "phone", "full_name"]
+    ordering_fields = ["email", "full_name", "role", "date_joined"]
+    ordering = ["email"]
 
 
-# ==========================
-# Suppression compte utilisateur (connecté)
-# ==========================
+class DeleteMeView(APIView):
+    """Désactive le compte courant (les pièces comptables sont conservées)."""
 
-class DeleteMeView(generics.DestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
-    def get_object(self):
-        return self.request.user
+    @extend_schema(request=None, responses={204: None})
+    def delete(self, request):
+        services.deactivate_account(request.user)
+        return Response(status=status.HTTP_204_NO_CONTENT)

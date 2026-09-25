@@ -1,73 +1,96 @@
-# apps/quotes/serializers.py
+from __future__ import annotations
+
 from rest_framework import serializers
+
+from apps.common.money import format_money
+
 from .models import Quote, QuoteItem
-from apps.products.models import Product
 
 
 class QuoteItemSerializer(serializers.ModelSerializer):
-    product_name = serializers.CharField(source="product.name", read_only=True)
-    product_price = serializers.DecimalField(source="product.price", read_only=True, max_digits=10, decimal_places=2)
+    product_price = serializers.DecimalField(
+        source="unit_price", max_digits=12, decimal_places=2, read_only=True
+    )
+    subtotal = serializers.DecimalField(source="line_total", max_digits=15, decimal_places=2, read_only=True)
 
     class Meta:
         model = QuoteItem
-        fields = ["id", "product", "product_name", "product_price", "quantity", "subtotal"]
-        read_only_fields = ["subtotal", "product_name", "product_price"]
+        fields = [
+            "id",
+            "product",
+            "product_name",
+            "product_price",
+            "unit_price",
+            "quantity",
+            "line_total",
+            "subtotal",
+        ]
+        read_only_fields = fields
 
 
-class QuoteItemWriteSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = QuoteItem
-        fields = ["product", "quantity"]
+class QuoteItemInputSerializer(serializers.Serializer):
+    product = serializers.IntegerField(min_value=1)
+    quantity = serializers.IntegerField(min_value=1, max_value=1000, default=1)
 
 
 class QuoteSerializer(serializers.ModelSerializer):
     items = QuoteItemSerializer(many=True, read_only=True)
-    items_write = QuoteItemWriteSerializer(many=True, write_only=True, required=False)
-    user_name = serializers.CharField(source="user.username", read_only=True, required=False)
+    user_name = serializers.SerializerMethodField()
+    total_display = serializers.SerializerMethodField()
+    status_display = serializers.CharField(source="get_status_display", read_only=True)
 
     class Meta:
         model = Quote
         fields = [
             "id",
+            "reference",
             "user",
             "user_name",
             "status",
+            "status_display",
+            "contact_name",
+            "contact_email",
+            "contact_phone",
             "description",
             "message",
             "rooms",
             "entries",
             "windows",
+            "currency",
             "total_estimate",
+            "total_display",
             "created_at",
             "items",
-            "items_write",
         ]
-        read_only_fields = ["status", "total_estimate", "created_at", "user"]
+        read_only_fields = fields
 
-    def create(self, validated_data):
-        items_data = validated_data.pop("items_write", [])
-        
-        # Récupérer l'utilisateur depuis le contexte
-        user = self.context["request"].user if self.context["request"].user.is_authenticated else None
-        
-        # Créer le devis avec l'utilisateur
-        quote = Quote.objects.create(user=user, **validated_data)
+    def get_user_name(self, obj: Quote) -> str:
+        # ``display_name`` vit sur le modèle utilisateur : l'ancien code lisait un
+        # champ ``username`` qui n'existe pas sur ce projet.
+        return getattr(obj.user, "display_name", "") or obj.contact_name
 
-        total = 0
-        for item_data in items_data:
-            product = item_data.get("product")
-            quantity = item_data.get("quantity", 1)
-            
-            if product:
-                subtotal = product.price * quantity
-                QuoteItem.objects.create(
-                    quote=quote, 
-                    product=product, 
-                    quantity=quantity,
-                    subtotal=subtotal
-                )
-                total += subtotal
+    def get_total_display(self, obj: Quote) -> str:
+        return format_money(obj.total_estimate)
 
-        quote.total_estimate = total
-        quote.save()
-        return quote
+
+class QuoteCreateSerializer(serializers.Serializer):
+    """Demande de devis. L'estimation est chiffrée par le serveur."""
+
+    items_write = QuoteItemInputSerializer(many=True, required=False, default=list)
+    contact_name = serializers.CharField(required=False, allow_blank=True, max_length=255, default="")
+    contact_email = serializers.EmailField(required=False, allow_blank=True, default="")
+    contact_phone = serializers.CharField(required=False, allow_blank=True, max_length=25, default="")
+    description = serializers.CharField(required=False, allow_blank=True, default="")
+    message = serializers.CharField(required=False, allow_blank=True, default="")
+    rooms = serializers.IntegerField(required=False, min_value=0, max_value=1000, default=0)
+    entries = serializers.IntegerField(required=False, min_value=0, max_value=1000, default=0)
+    windows = serializers.IntegerField(required=False, min_value=0, max_value=1000, default=0)
+
+    def validate(self, attrs):
+        if not attrs.get("items_write") and not (attrs.get("description") or attrs.get("message")):
+            raise serializers.ValidationError("Indiquez au moins un produit ou décrivez votre besoin.")
+        return attrs
+
+
+class QuoteStatusSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=Quote._meta.get_field("status").choices)

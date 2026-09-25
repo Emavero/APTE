@@ -31,7 +31,7 @@ const ImageList = [
   },
 ];
 
-const Hero = ({ handleOrderPopup }) => {
+const Hero = () => {
   const settings = {
     dots: true,
     arrows: false,

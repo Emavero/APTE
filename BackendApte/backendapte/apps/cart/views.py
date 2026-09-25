@@ -1,190 +1,84 @@
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+"""Contrôleurs du panier.
+
+Le panier est accessible sans compte (session anonyme) : l'appartenance est
+déduite de la requête, jamais d'un identifiant fourni par le client. C'est ce qui
+supprime les contrôles d'autorisation ad hoc de l'ancienne implémentation.
+"""
+
+from __future__ import annotations
+
+from drf_spectacular.utils import extend_schema
+from rest_framework import permissions, status
 from rest_framework.response import Response
-from .models import Cart, AnonymousCart, CartItem
-from .serializers import CartSerializer, AnonymousCartSerializer, CartItemSerializer
-from apps.products.models import Product
+from rest_framework.views import APIView
 
-def get_or_create_anonymous_cart(session_key):
-    """Obtenir ou créer un panier anonyme"""
-    cart, created = AnonymousCart.objects.get_or_create(session_key=session_key)
-    return cart
+from . import services
+from .models import Cart
+from .serializers import AddItemSerializer, CartSerializer, UpdateItemSerializer
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def get_cart(request):
-    """Récupérer le panier de l'utilisateur (authentifié ou anonyme)"""
-    if request.user.is_authenticated:
-        # Utilisateur connecté
-        cart, created = Cart.objects.get_or_create(user=request.user)
-        serializer = CartSerializer(cart)
-    else:
-        # Utilisateur anonyme
-        session_key = request.session.session_key
-        if not session_key:
-            request.session.create()
-            session_key = request.session.session_key
-        
-        cart = get_or_create_anonymous_cart(session_key)
-        serializer = AnonymousCartSerializer(cart)
-    
-    return Response(serializer.data)
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def add_to_cart(request):
-    """Ajouter un produit au panier"""
-    product_id = request.data.get('product_id')
-    quantity = request.data.get('quantity', 1)
+class CartBaseView(APIView):
+    permission_classes = [permissions.AllowAny]
 
-    try:
-        product = Product.objects.get(id=product_id)
-    except Product.DoesNotExist:
-        return Response(
-            {'error': 'Produit non trouvé'},
-            status=status.HTTP_404_NOT_FOUND
+    def current_cart(self, request) -> Cart:
+        return services.get_or_create_cart(request)
+
+    def cart_response(self, cart: Cart, *, http_status=status.HTTP_200_OK) -> Response:
+        cart = Cart.objects.with_items().get(pk=cart.pk)
+        return Response(CartSerializer(cart, context={"request": self.request}).data, status=http_status)
+
+
+class CartView(CartBaseView):
+    """Consultation et vidage du panier courant."""
+
+    @extend_schema(responses={200: CartSerializer})
+    def get(self, request):
+        return self.cart_response(self.current_cart(request))
+
+    @extend_schema(request=None, responses={200: CartSerializer})
+    def delete(self, request):
+        return self.cart_response(services.clear(self.current_cart(request)))
+
+
+class CartAddView(CartBaseView):
+    @extend_schema(request=AddItemSerializer, responses={201: CartSerializer})
+    def post(self, request):
+        serializer = AddItemSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        cart = services.add_item(
+            self.current_cart(request),
+            product_id=serializer.validated_data["product_id"],
+            quantity=serializer.validated_data["quantity"],
         )
+        return self.cart_response(cart, http_status=status.HTTP_201_CREATED)
 
-    try:
-        if request.user.is_authenticated:
-            # Panier authentifié
-            cart, created = Cart.objects.get_or_create(user=request.user)
-            
-            cart_item, created = CartItem.objects.get_or_create(
-                cart=cart,
-                product=product,
-                defaults={'quantity': quantity}
-            )
-            
-            if not created:
-                cart_item.quantity += quantity
-                cart_item.save()
-            
-            serializer = CartSerializer(cart)
-        else:
-            # Panier anonyme
-            session_key = request.session.session_key
-            if not session_key:
-                request.session.create()
-                session_key = request.session.session_key
-            
-            cart = get_or_create_anonymous_cart(session_key)
-            
-            cart_item, created = CartItem.objects.get_or_create(
-                anonymous_cart=cart,
-                product=product,
-                defaults={'quantity': quantity}
-            )
-            
-            if not created:
-                cart_item.quantity += quantity
-                cart_item.save()
-            
-            serializer = AnonymousCartSerializer(cart)
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    
-    except Exception as e:
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_400_BAD_REQUEST
-        )
 
-@api_view(['DELETE'])
-@permission_classes([AllowAny])
-def remove_from_cart(request, item_id):
-    """Supprimer un article du panier"""
-    try:
-        item = CartItem.objects.get(id=item_id)
-        
-        if request.user.is_authenticated:
-            if item.cart.user != request.user:
-                return Response(
-                    {'error': 'Non autorisé'},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            item.delete()
-            cart = item.cart
-            serializer = CartSerializer(cart)
-        else:
-            session_key = request.session.session_key
-            if item.anonymous_cart.session_key != session_key:
-                return Response(
-                    {'error': 'Non autorisé'},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            item.delete()
-            cart = item.anonymous_cart
-            serializer = AnonymousCartSerializer(cart)
-        
-        return Response(serializer.data)
-    except CartItem.DoesNotExist:
-        return Response(
-            {'error': 'Article non trouvé'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+class CartItemView(CartBaseView):
+    """Modification / retrait d'une ligne, désignée par son produit."""
 
-@api_view(['PATCH'])
-@permission_classes([AllowAny])
-def update_cart_item(request, item_id):
-    """Mettre à jour la quantité"""
-    quantity = request.data.get('quantity', 1)
-    
-    if quantity <= 0:
-        return Response(
-            {'error': 'La quantité doit être positive'},
-            status=status.HTTP_400_BAD_REQUEST
+    @extend_schema(request=UpdateItemSerializer, responses={200: CartSerializer})
+    def patch(self, request, product_id: int):
+        serializer = UpdateItemSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        cart = services.set_quantity(
+            self.current_cart(request),
+            product_id=product_id,
+            quantity=serializer.validated_data["quantity"],
         )
+        return self.cart_response(cart)
 
-    try:
-        item = CartItem.objects.get(id=item_id)
-        
-        if request.user.is_authenticated:
-            if item.cart.user != request.user:
-                return Response(
-                    {'error': 'Non autorisé'},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            item.quantity = quantity
-            item.save()
-            serializer = CartSerializer(item.cart)
-        else:
-            session_key = request.session.session_key
-            if item.anonymous_cart.session_key != session_key:
-                return Response(
-                    {'error': 'Non autorisé'},
-                    status=status.HTTP_403_FORBIDDEN
-                )
-            item.quantity = quantity
-            item.save()
-            serializer = AnonymousCartSerializer(item.anonymous_cart)
-        
-        return Response(serializer.data)
-    except CartItem.DoesNotExist:
-        return Response(
-            {'error': 'Article non trouvé'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+    @extend_schema(request=None, responses={200: CartSerializer})
+    def delete(self, request, product_id: int):
+        cart = services.remove_item(self.current_cart(request), product_id=product_id)
+        return self.cart_response(cart)
 
-@api_view(['DELETE'])
-@permission_classes([AllowAny])
-def clear_cart(request):
-    """Vider le panier"""
-    try:
-        if request.user.is_authenticated:
-            cart = Cart.objects.get(user=request.user)
-            cart.items.all().delete()
-            serializer = CartSerializer(cart)
-        else:
-            session_key = request.session.session_key
-            cart = AnonymousCart.objects.get(session_key=session_key)
-            cart.items.all().delete()
-            serializer = AnonymousCartSerializer(cart)
-        
-        return Response(serializer.data)
-    except (Cart.DoesNotExist, AnonymousCart.DoesNotExist):
-        return Response(
-            {'error': 'Panier non trouvé'},
-            status=status.HTTP_404_NOT_FOUND
-        )
+
+class CartMergeView(CartBaseView):
+    """Reprend le panier anonyme dans le compte, à appeler après connexion."""
+
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(request=None, responses={200: CartSerializer})
+    def post(self, request):
+        cart = services.merge_anonymous_cart(user=request.user, session_key=request.session.session_key)
+        return self.cart_response(cart)

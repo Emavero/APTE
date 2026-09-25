@@ -1,5 +1,12 @@
-node_modules
-dist
-build
-.git
-.vscode
+node_modules/
+dist/
+dist-ssr/
+.vite/
+.git/
+.gitignore
+.github/
+.env
+.env.*
+!.env.example
+npm-debug.log*
+*.local

@@ -1,90 +1,66 @@
-from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
+"""Entité utilisateur."""
+
+from __future__ import annotations
+
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
 from django.db import models
+from django.utils import timezone
 
-# ==============================
-# Gestionnaire personnalisé
-# ==============================
-class UserManager(BaseUserManager):
-    
-    """
-    Manager personnalisé pour le modèle User.
-    Définit comment créer des utilisateurs normaux et des superusers.
-    """
+from apps.common.validators import validate_phone
 
-    def create_user(self, email=None, phone=None, password=None, **extra_fields):
-       
-        """
-        Crée et sauvegarde un utilisateur normal.
-        - email ou phone doivent être fournis.
-        - le mot de passe est hashé automatiquement.
-        """
-        if not email and not phone:
-            raise ValueError("Un utilisateur doit avoir au moins un email ou un numéro de téléphone")
-
-        # Normalise l'email (minuscule, etc.) si fourni
-        email = self.normalize_email(email) if email else None
-
-        # Crée l'objet utilisateur sans l'enregistrer encore en DB
-        user = self.model(email=email, phone=phone, **extra_fields)
-
-        # Hash du mot de passe
-        user.set_password(password)
-
-        # Sauvegarde en base de données
-        user.save(using=self._db)
-        return user
-
-    def create_superuser(self, email, phone, password=None, **extra_fields):
-        """
-        Crée un superuser avec tous les droits.
-        Définit is_staff, is_superuser et is_active à True par défaut.
-        """
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
-        extra_fields.setdefault("is_active", True)
-
-        return self.create_user(email, phone, password, **extra_fields)
+from .managers import UserManager
 
 
-# ==============================
-# Modèle utilisateur personnalisé
-# ==============================
+class Role(models.TextChoices):
+    INDIVIDUAL = "individual", "Particulier"
+    COMPANY = "company", "Entreprise"
+
+
 class User(AbstractBaseUser, PermissionsMixin):
-    """
-    Modèle d'utilisateur personnalisé.
-    Hérite de AbstractBaseUser pour la gestion du mot de passe.
-    Hérite de PermissionsMixin pour gérer les permissions et groupes.
-    """
+    """Utilisateur identifié par e-mail (identifiant principal) ou téléphone."""
 
-    # Informations de contact
-    email = models.EmailField(unique=True, null=True, blank=True)  # email unique, facultatif
-    phone = models.CharField(max_length=15, unique=True, null=True, blank=True)  # numéro unique, facultatif
-
-    # Informations personnelles
-    full_name = models.CharField(max_length=255, blank=True)
-    role = models.CharField(
-        max_length=20,
-        choices=[ ("individual", "Particulier"),("company", "Entreprise")],
-        default="individual"
+    email = models.EmailField("e-mail", unique=True, null=True, blank=True)
+    phone = models.CharField(
+        "téléphone",
+        max_length=15,
+        unique=True,
+        null=True,
+        blank=True,
+        validators=[validate_phone],
     )
 
-    # Statut et permissions
-    is_active = models.BooleanField(default=True)  # permet d'activer/désactiver l'utilisateur
-    is_staff = models.BooleanField(default=False)  # permet l'accès à l'admin
-    date_joined = models.DateTimeField(auto_now_add=True)  # date de création de l'utilisateur
+    full_name = models.CharField("nom complet", max_length=255, blank=True)
+    role = models.CharField("type de compte", max_length=20, choices=Role.choices, default=Role.INDIVIDUAL)
 
-    # Associe le manager personnalisé
+    is_active = models.BooleanField("actif", default=True)
+    is_staff = models.BooleanField("membre du personnel", default=False)
+    date_joined = models.DateTimeField("inscrit le", default=timezone.now)
+
     objects = UserManager()
 
-    # ==============================
-    # Configuration Django
-    # ==============================
-    USERNAME_FIELD = "email"       # champ utilisé pour l'authentification
-    REQUIRED_FIELDS = ["phone"]    # champs requis pour create_superuser
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["phone"]
 
-    def __str__(self):
-        """
-        Retourne une représentation lisible de l'utilisateur.
-        Affiche l'email si disponible, sinon le numéro de téléphone.
-        """
-        return self.email or self.phone
+    class Meta:
+        verbose_name = "utilisateur"
+        verbose_name_plural = "utilisateurs"
+        ordering = ["email"]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(email__isnull=False) | models.Q(phone__isnull=False),
+                name="user_has_email_or_phone",
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return self.email or self.phone or f"Utilisateur #{self.pk}"
+
+    @property
+    def display_name(self) -> str:
+        return self.full_name or self.email or self.phone or ""
+
+    def get_full_name(self) -> str:
+        return self.full_name
+
+    def get_short_name(self) -> str:
+        return self.full_name.split(" ")[0] if self.full_name else (self.email or "")
